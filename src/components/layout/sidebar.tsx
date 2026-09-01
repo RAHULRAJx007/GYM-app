@@ -77,9 +77,11 @@ export function Sidebar() {
 
 export function MobileNav() {
   const pathname = usePathname();
+  const role = useRole();
+  const filteredNav = nav.filter((item) => !(item as any).adminOnly || role === "admin" || role === null);
   return (
     <nav className="md:hidden flex gap-1.5 p-2 border-b overflow-x-auto scrollbar-none sticky top-0 bg-background z-10">
-      {nav.map((item) => {
+      {filteredNav.map((item) => {
         const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
         return (
           <Link
