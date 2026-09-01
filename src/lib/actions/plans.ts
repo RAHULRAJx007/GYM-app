@@ -9,6 +9,7 @@ export async function createPlan(formData: FormData) {
     description: String(formData.get("description") || "") || null,
     price: Number(formData.get("price")),
     duration_days: Number(formData.get("duration_days")),
+    category: String(formData.get("category") || "membership"),
     is_active: String(formData.get("is_active") || "true") === "true",
   };
   if (!payload.name || !payload.price || !payload.duration_days) throw new Error("Name, price, duration required");
@@ -24,6 +25,7 @@ export async function updatePlan(id: string, formData: FormData) {
     description: String(formData.get("description") || "") || null,
     price: Number(formData.get("price")),
     duration_days: Number(formData.get("duration_days")),
+    category: String(formData.get("category") || "membership"),
     is_active: String(formData.get("is_active") || "true") === "true",
   };
   const { error } = await supabase.from("membership_plans").update(payload).eq("id", id);

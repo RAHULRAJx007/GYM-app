@@ -16,54 +16,54 @@ export default async function MembersPage({ searchParams }: { searchParams: Prom
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Members</h1>
-        <Link href="/dashboard/members/new"><Button>Add Member</Button></Link>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold">Members</h1>
+        <Link href="/dashboard/members/new" className="w-full sm:w-auto"><Button className="w-full sm:w-auto h-11">Add Member</Button></Link>
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Search & Filter</CardTitle></CardHeader>
+        <CardHeader className="pb-3"><CardTitle className="text-base">Search & Filter</CardTitle></CardHeader>
         <CardContent>
-          <form className="flex gap-2">
-            <Input name="q" placeholder="Search name, phone, email" defaultValue={q || ""} />
-            <select name="status" defaultValue={status || "all"} className="border rounded-md px-3 text-sm">
+          <form className="flex flex-col sm:flex-row gap-2">
+            <Input name="q" placeholder="Search name, phone, email" defaultValue={q || ""} className="h-11 flex-1" />
+            <select name="status" defaultValue={status || "all"} className="border rounded-md px-3 text-sm h-11 bg-transparent">
               <option value="all">All</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
               <option value="frozen">Frozen</option>
               <option value="cancelled">Cancelled</option>
             </select>
-            <Button type="submit" variant="secondary">Search</Button>
+            <Button type="submit" variant="secondary" className="h-11 w-full sm:w-auto">Search</Button>
           </form>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="p-0">
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Phone</TableHead>
+                <TableHead className="min-w-[160px]">Name</TableHead>
+                <TableHead className="hidden sm:table-cell">Phone</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Joined</TableHead>
+                <TableHead className="hidden md:table-cell">Joined</TableHead>
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {members?.map((m) => (
                 <TableRow key={m.id}>
-                  <TableCell className="font-medium">{m.first_name} {m.last_name}<br /><span className="text-xs text-muted-foreground">{m.email || ""}</span></TableCell>
-                  <TableCell>{m.phone || "-"}</TableCell>
-                  <TableCell><Badge variant={m.status === "active" ? "default" : "secondary"}>{m.status}</Badge></TableCell>
-                  <TableCell className="text-sm">{new Date(m.joined_at).toLocaleDateString("en-IN")}</TableCell>
-                  <TableCell><Link href={`/dashboard/members/${m.id}`}><Button size="sm" variant="outline">View</Button></Link></TableCell>
+                  <TableCell className="font-medium"><div className="font-medium">{m.first_name} {m.last_name}</div><div className="text-xs text-muted-foreground sm:hidden">{m.phone || ""}</div><div className="text-xs text-muted-foreground hidden sm:block">{m.email || ""}</div></TableCell>
+                  <TableCell className="hidden sm:table-cell whitespace-nowrap">{m.phone || "-"}</TableCell>
+                  <TableCell><Badge variant={m.status === "active" ? "default" : "secondary"} className="text-xs">{m.status}</Badge></TableCell>
+                  <TableCell className="text-sm hidden md:table-cell whitespace-nowrap">{new Date(m.joined_at).toLocaleDateString("en-IN")}</TableCell>
+                  <TableCell><Link href={`/dashboard/members/${m.id}`}><Button size="sm" variant="outline" className="h-8">View</Button></Link></TableCell>
                 </TableRow>
               ))}
-              {(!members || members.length === 0) && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No members found. Add your first member.</TableCell></TableRow>}
+              {(!members || members.length === 0) && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No members found.</TableCell></TableRow>}
             </TableBody>
           </Table>
-        </CardContent>
+        </div>
       </Card>
     </div>
   );

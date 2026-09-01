@@ -26,13 +26,13 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
   const activeMembership = memberships?.find((m) => m.status === "active");
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{member.first_name} {member.last_name} <Badge className="ml-2">{member.status}</Badge></h1>
-        <Link href="/dashboard/members"><Button variant="outline">Back</Button></Link>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h1 className="text-lg sm:text-2xl font-bold break-words">{member.first_name} {member.last_name} <Badge className="ml-2 align-middle">{member.status}</Badge></h1>
+        <Link href="/dashboard/members" className="w-full sm:w-auto"><Button variant="outline" className="w-full sm:w-auto">Back</Button></Link>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <Card className="md:col-span-1">
           <CardHeader><CardTitle>Profile</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm">
@@ -61,12 +61,12 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
                   <p className="text-muted-foreground">{activeMembership.start_date} → {activeMembership.end_date} ({activeMembership.status})</p>
                 </div>
               ) : <p className="text-sm text-muted-foreground">No active membership.</p>}
-              <form action={assignMembership.bind(null, id)} className="mt-4 grid grid-cols-2 gap-2">
-                <select name="plan_id" required className="border rounded-md px-3 py-2 text-sm"><option value="">Select Plan</option>{plans?.map((p) => <option key={p.id} value={p.id}>{p.name} — {formatCurrency(Number(p.price))} / {p.duration_days}d</option>)}</select>
-                <Input name="price_paid" type="number" placeholder="Price paid (optional)" />
-                <Input name="start_date" type="date" required defaultValue={new Date().toISOString().slice(0,10)} />
-                <Input name="end_date" type="date" required />
-                <Button type="submit" className="col-span-2">Assign Plan</Button>
+              <form action={assignMembership.bind(null, id)} className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <select name="plan_id" required className="border rounded-md px-3 py-2 text-sm h-11 bg-transparent"><option value="">Select Plan</option>{plans?.map((p) => <option key={p.id} value={p.id}>{p.name} — {formatCurrency(Number(p.price))} / {p.duration_days}d</option>)}</select>
+                <Input name="price_paid" type="number" placeholder="Price paid (optional)" className="h-11" />
+                <Input name="start_date" type="date" required defaultValue={new Date().toISOString().slice(0,10)} className="h-11" />
+                <Input name="end_date" type="date" required className="h-11" />
+                <Button type="submit" className="col-span-1 sm:col-span-2 h-11">Assign Plan</Button>
               </form>
             </CardContent>
           </Card>
@@ -74,13 +74,13 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
           <Card>
             <CardHeader><CardTitle>Record Payment</CardTitle></CardHeader>
             <CardContent>
-              <form action={recordPayment.bind(null, id)} className="grid grid-cols-2 gap-2">
-                <Input name="amount" type="number" step="0.01" placeholder="Amount *" required />
-                <select name="payment_method" className="border rounded-md px-3 text-sm"><option value="cash">Cash</option><option value="card">Card</option><option value="upi">UPI</option><option value="bank_transfer">Bank Transfer</option><option value="other">Other</option></select>
-                <Input name="payment_date" type="date" defaultValue={new Date().toISOString().slice(0,10)} />
-                <select name="membership_id" className="border rounded-md px-3 text-sm"><option value="">Link to membership (optional)</option>{memberships?.map((m) => <option key={m.id} value={m.id}>{m.start_date} → {m.end_date}</option>)}</select>
-                <Input name="notes" placeholder="Notes" className="col-span-2" />
-                <Button type="submit" className="col-span-2">Record Payment</Button>
+              <form action={recordPayment.bind(null, id)} className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Input name="amount" type="number" step="0.01" placeholder="Amount *" required className="h-11" />
+                <select name="payment_method" className="border rounded-md px-3 text-sm h-11 bg-transparent"><option value="cash">Cash</option><option value="card">Card</option><option value="upi">UPI</option><option value="bank_transfer">Bank Transfer</option><option value="other">Other</option></select>
+                <Input name="payment_date" type="date" defaultValue={new Date().toISOString().slice(0,10)} className="h-11" />
+                <select name="membership_id" className="border rounded-md px-3 text-sm h-11 bg-transparent"><option value="">Link to membership (optional)</option>{memberships?.map((m) => <option key={m.id} value={m.id}>{m.start_date} → {m.end_date}</option>)}</select>
+                <Input name="notes" placeholder="Notes" className="col-span-1 sm:col-span-2 h-11" />
+                <Button type="submit" className="col-span-1 sm:col-span-2 h-11">Record Payment</Button>
               </form>
               <div className="mt-4 space-y-1 text-sm">
                 {payments?.map((p) => (
@@ -103,17 +103,17 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
             <CardHeader><CardTitle>Edit Member</CardTitle></CardHeader>
             <CardContent>
               <form action={updateMember.bind(null, id)} className="space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <div><Label>First Name</Label><Input name="first_name" defaultValue={member.first_name} required /></div>
-                  <div><Label>Last Name</Label><Input name="last_name" defaultValue={member.last_name} required /></div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div><Label>First Name</Label><Input name="first_name" defaultValue={member.first_name} required className="h-11" /></div>
+                  <div><Label>Last Name</Label><Input name="last_name" defaultValue={member.last_name} required className="h-11" /></div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div><Label>Phone</Label><Input name="phone" defaultValue={member.phone || ""} /></div>
-                  <div><Label>Email</Label><Input name="email" defaultValue={member.email || ""} /></div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div><Label>Phone</Label><Input name="phone" defaultValue={member.phone || ""} className="h-11" /></div>
+                  <div><Label>Email</Label><Input name="email" defaultValue={member.email || ""} className="h-11" /></div>
                 </div>
-                <div><Label>Address</Label><Input name="address" defaultValue={member.address || ""} /></div>
+                <div><Label>Address</Label><Input name="address" defaultValue={member.address || ""} className="h-11" /></div>
                 <div><Label>Medical Notes</Label><Textarea name="medical_notes" defaultValue={member.medical_notes || ""} rows={2} /></div>
-                <div><Label>Status</Label><select name="status" defaultValue={member.status} className="flex h-9 w-full rounded-md border px-3 text-sm"><option value="active">Active</option><option value="inactive">Inactive</option><option value="frozen">Frozen</option><option value="cancelled">Cancelled</option></select></div>
+                <div><Label>Status</Label><select name="status" defaultValue={member.status} className="flex h-11 w-full rounded-md border px-3 text-sm bg-transparent"><option value="active">Active</option><option value="inactive">Inactive</option><option value="frozen">Frozen</option><option value="cancelled">Cancelled</option></select></div>
                 <input type="hidden" name="gender" value={member.gender || ""} />
                 <input type="hidden" name="date_of_birth" value={member.date_of_birth || ""} />
                 <input type="hidden" name="emergency_contact_name" value={member.emergency_contact_name || ""} />

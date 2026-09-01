@@ -16,26 +16,26 @@ export default async function PaymentsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Payments</h1>
-      <Card>
-        <CardHeader><CardTitle>Total (last 100): {formatCurrency(total)}</CardTitle></CardHeader>
-        <CardContent className="p-0">
+      <h1 className="text-xl sm:text-2xl font-bold">Payments</h1>
+      <Card className="overflow-hidden">
+        <CardHeader className="pb-3"><CardTitle className="text-base sm:text-lg">Total (last 100): {formatCurrency(total)}</CardTitle></CardHeader>
+        <div className="overflow-x-auto">
           <Table>
-            <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Member</TableHead><TableHead>Amount</TableHead><TableHead>Method</TableHead><TableHead>Receipt</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead className="whitespace-nowrap">Date</TableHead><TableHead className="min-w-[120px]">Member</TableHead><TableHead className="whitespace-nowrap">Amount</TableHead><TableHead className="hidden sm:table-cell">Method</TableHead><TableHead className="hidden md:table-cell">Receipt</TableHead></TableRow></TableHeader>
             <TableBody>
               {payments?.map((p: any) => (
                 <TableRow key={p.id}>
-                  <TableCell>{formatDate(p.payment_date)}</TableCell>
-                  <TableCell><Link href={`/dashboard/members/${p.member_id}`} className="underline">{p.members?.first_name} {p.members?.last_name}</Link></TableCell>
-                  <TableCell className="font-medium">{formatCurrency(Number(p.amount))}</TableCell>
-                  <TableCell>{p.payment_method}</TableCell>
-                  <TableCell className="text-xs">{p.receipt_number}</TableCell>
+                  <TableCell className="whitespace-nowrap text-sm">{formatDate(p.payment_date)}</TableCell>
+                  <TableCell><Link href={`/dashboard/members/${p.member_id}`} className="underline text-sm">{p.members?.first_name} {p.members?.last_name}</Link><div className="sm:hidden text-xs text-muted-foreground">{p.payment_method}</div></TableCell>
+                  <TableCell className="font-medium whitespace-nowrap text-sm">{formatCurrency(Number(p.amount))}</TableCell>
+                  <TableCell className="hidden sm:table-cell text-sm">{p.payment_method}</TableCell>
+                  <TableCell className="text-xs hidden md:table-cell max-w-[120px] truncate">{p.receipt_number}</TableCell>
                 </TableRow>
               ))}
               {(!payments || payments.length === 0) && <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No payments yet.</TableCell></TableRow>}
             </TableBody>
           </Table>
-        </CardContent>
+        </div>
       </Card>
     </div>
   );

@@ -4,20 +4,38 @@ import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
-import { LayoutDashboard, Users, Package, CreditCard, ClipboardCheck, Settings, LogOut, Dumbbell } from "lucide-react";
+import { LayoutDashboard, Users, Package, CreditCard, Settings, LogOut, Dumbbell, CheckSquare } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const nav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/members", label: "Members", icon: Users },
   { href: "/dashboard/plans", label: "Plans", icon: Package },
   { href: "/dashboard/payments", label: "Payments", icon: CreditCard },
-  { href: "/dashboard/attendance", label: "Attendance", icon: ClipboardCheck },
+  { href: "/dashboard/approvals", label: "Approvals", icon: CheckSquare, adminOnly: true },
+  { href: "/dashboard/staff", label: "Staff", icon: Users, adminOnly: true },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
-];
+] as const;
+
+function useRole() {
+  const [role, setRole] = useState<string | null>(null);
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase.from("profiles").select("role").eq("id", user.id).single().then(({ data }) => {
+        if (data?.role) setRole(data.role);
+      });
+    });
+  }, []);
+  return role;
+}
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const role = useRole();
+  const filteredNav = nav.filter((item) => !(item as any).adminOnly || role === "admin" || role === null);
 
   async function logout() {
     const supabase = createClient();
@@ -32,7 +50,7 @@ export function Sidebar() {
         <Dumbbell className="h-5 w-5" /> GymCore
       </div>
       <nav className="flex-1 p-4 space-y-1">
-        {nav.map((item) => {
+        {filteredNav.map((item) => {
           const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
           return (
             <Link
@@ -60,19 +78,48 @@ export function Sidebar() {
 export function MobileNav() {
   const pathname = usePathname();
   return (
-    <nav className="md:hidden flex gap-1 p-2 border-b overflow-x-auto">
-      {nav.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          className={cn(
-            "px-3 py-1.5 rounded-md text-sm whitespace-nowrap",
-            pathname === item.href ? "bg-primary text-primary-foreground" : "bg-muted"
-          )}
-        >
-          {item.label}
-        </Link>
-      ))}
+    <nav className="md:hidden flex gap-1.5 p-2 border-b overflow-x-auto scrollbar-none sticky top-0 bg-background z-10">
+      {nav.map((item) => {
+        const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              "px-3.5 py-2.5 rounded-full text-sm whitespace-nowrap font-medium flex items-center gap-1.5 min-h-[40px]",
+              active ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/80"
+            )}
+          >
+            <item.icon className="h-4 w-4 shrink-0" /> {item.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+export function MobileBottomNav() {
+  const pathname = usePathname();
+  // show only 5 primary items on bottom for thumb reach
+  const bottomNav = nav.slice(0, 5);
+  return (
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t flex justify-around items-center py-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] z-20">
+      {bottomNav.map((item) => {
+        const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              "flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg min-w-[60px]",
+              active ? "text-primary" : "text-muted-foreground"
+            )}
+          >
+            <item.icon className={cn("h-5 w-5", active && "fill-primary/10")} />
+            <span className="text-[10px] font-medium leading-none">{item.label}</span>
+          </Link>
+        );
+      })}
     </nav>
   );
 }
