@@ -91,7 +91,7 @@ create index if not exists idx_mm_member on member_memberships(member_id);
 create index if not exists idx_mm_dates on member_memberships(start_date, end_date);
 create index if not exists idx_mm_status on member_memberships(status);
 
--- Payments with approval workflow
+-- Payments with approval workflow + proof screenshot
 create table if not exists payments (
   id uuid primary key default gen_random_uuid(),
   member_id uuid references members(id) on delete cascade not null,
@@ -104,11 +104,18 @@ create table if not exists payments (
   status text default 'pending' check (status in ('pending','completed','failed','refunded','rejected')),
   receipt_number text unique default 'REC-' || substr(gen_random_uuid()::text,1,8),
   notes text,
+  proof_url text,
   created_by uuid references profiles(id),
   approved_by uuid references profiles(id),
   approved_at timestamptz,
   created_at timestamptz default now()
 );
+-- add proof_url if migrating
+do $$ begin
+  if not exists (select 1 from information_schema.columns where table_name='payments' and column_name='proof_url') then
+    alter table payments add column proof_url text;
+  end if;
+end $$;
 create index if not exists idx_payments_member on payments(member_id);
 create index if not exists idx_payments_date on payments(payment_date);
 create index if not exists idx_payments_status on payments(status);
@@ -183,6 +190,20 @@ create policy "mm update" on member_memberships for update to authenticated usin
 create policy "payments read" on payments for select to authenticated using (true);
 create policy "payments insert" on payments for insert to authenticated with check (true);
 create policy "payments update" on payments for update to authenticated using (true);
+
+-- Storage bucket for payment proofs (screenshots)
+insert into storage.buckets (id, name, public) values ('payment-proofs', 'payment-proofs', true) on conflict (id) do nothing;
+do $$ begin
+  if not exists (select 1 from pg_policies where policyname='payment proofs read' and tablename='objects') then
+    create policy "payment proofs read" on storage.objects for select to authenticated using (bucket_id = 'payment-proofs');
+  end if;
+  if not exists (select 1 from pg_policies where policyname='payment proofs insert' and tablename='objects') then
+    create policy "payment proofs insert" on storage.objects for insert to authenticated with check (bucket_id = 'payment-proofs');
+  end if;
+  if not exists (select 1 from pg_policies where policyname='payment proofs delete' and tablename='objects') then
+    create policy "payment proofs delete" on storage.objects for delete to authenticated using (bucket_id = 'payment-proofs');
+  end if;
+end $$;
 
 -- Seed plans if empty (membership + PT)
 insert into membership_plans (name, description, price, duration_days, category) 

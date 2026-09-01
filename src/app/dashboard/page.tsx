@@ -12,6 +12,7 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   const { data: profile } = user ? await supabase.from("profiles").select("role").eq("id", user.id).single() : { data: null } as any;
   const isAdmin = profile?.role === "admin";
+  const { data: gym } = await supabase.from("gym_settings").select("name, phone, address, email").order("created_at", { ascending: false }).limit(1).maybeSingle();
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const in7Str = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
@@ -32,35 +33,54 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h1 className="text-xl sm:text-2xl font-bold">Dashboard</h1>
-        <Link href="/dashboard/members/new" className="w-full sm:w-auto"><Button className="w-full sm:w-auto h-11">Add Member</Button></Link>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">Overview</p>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Dashboard</h1>
+        </div>
+        <Link href="/dashboard/members/new" className="w-full sm:w-auto">
+          <Button className="h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold shadow-sm sm:w-auto">Add Member</Button>
+        </Link>
       </div>
 
-      <div className={!isAdmin ? "grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-3" : "grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4"}>
-        <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium">Total Members</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{totalMembers ?? 0}</div><p className="text-xs text-muted-foreground">{activeMembers ?? 0} active</p></CardContent></Card>
-        {isAdmin && <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium">Revenue (MTD)</CardTitle><Wallet className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{formatCurrency(monthRevenue)}</div><p className="text-xs text-muted-foreground">{payments?.length ?? 0} payments</p></CardContent></Card>}
-        <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium">Plans</CardTitle><UserPlus className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{plans?.length ?? 0}</div><p className="text-xs text-muted-foreground">active plans</p></CardContent></Card>
-        <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium">Expiring (7d)</CardTitle><AlertTriangle className="h-4 w-4 text-amber-500" /></CardHeader><CardContent><div className="text-2xl font-bold">{expiring?.length ?? 0}</div><p className="text-xs text-muted-foreground">needs renewal</p></CardContent></Card>
+      <div className={!isAdmin ? "grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3" : "grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4"}>
+        <Card className="rounded-2xl border-0 bg-white/80 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Members</CardTitle><Users className="h-4 w-4 text-primary" /></CardHeader>
+          <CardContent><div className="text-2xl font-bold">{totalMembers ?? 0}</div><p className="text-xs text-muted-foreground">{activeMembers ?? 0} active</p></CardContent>
+        </Card>
+        {isAdmin && (
+          <Card className="rounded-2xl border-0 bg-white/80 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Revenue (MTD)</CardTitle><Wallet className="h-4 w-4 text-primary" /></CardHeader>
+            <CardContent><div className="text-2xl font-bold">{formatCurrency(monthRevenue)}</div><p className="text-xs text-muted-foreground">{payments?.length ?? 0} payments</p></CardContent>
+          </Card>
+        )}
+        <Card className="rounded-2xl border-0 bg-white/80 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Plans</CardTitle><UserPlus className="h-4 w-4 text-primary" /></CardHeader>
+          <CardContent><div className="text-2xl font-bold">{plans?.length ?? 0}</div><p className="text-xs text-muted-foreground">active plans</p></CardContent>
+        </Card>
+        <Card className="rounded-2xl border-0 bg-white/80 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Expiring (7d)</CardTitle><AlertTriangle className="h-4 w-4 text-amber-500" /></CardHeader>
+          <CardContent><div className="text-2xl font-bold">{expiring?.length ?? 0}</div><p className="text-xs text-muted-foreground">needs renewal</p></CardContent>
+        </Card>
       </div>
 
-      <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2">
-        <Card>
-          <CardHeader><CardTitle>Due in 7 days</CardTitle></CardHeader>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="rounded-2xl border-0 bg-white/80 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
+          <CardHeader><CardTitle className="text-lg">Due in 7 days</CardTitle></CardHeader>
           <CardContent>
             {expiring && expiring.length > 0 ? (
               <ul className="space-y-3 text-sm">
                 {(expiring as any[]).map((e) => {
                   const daysLeft = Math.ceil((new Date(e.end_date).getTime() - new Date().setHours(0,0,0,0)) / 86400000);
                   return (
-                    <li key={e.id} className="flex flex-col gap-1.5 border-b pb-2.5">
-                      <div className="flex justify-between">
-                        <span className="font-medium">{e.members?.first_name} {e.members?.last_name}</span>
-                        <span className="text-muted-foreground text-xs">{e.end_date} • {daysLeft}d left</span>
+                    <li key={e.id} className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold">{e.members?.first_name} {e.members?.last_name}</span>
+                        <span className="text-[11px] text-muted-foreground">{e.end_date} • {daysLeft}d left</span>
                       </div>
                       <div className="text-xs text-muted-foreground">{(e as any).membership_plans?.name || "Membership"}</div>
                       {isAdmin && (e as any).members?.phone && (
-                        <WhatsAppButton phone={(e as any).members.phone} message={dueMessage(`${(e as any).members.first_name} ${(e as any).members.last_name}`, (e as any).membership_plans?.name || "Membership", e.end_date, daysLeft)} label="WhatsApp reminder" />
+                        <WhatsAppButton phone={(e as any).members.phone} message={dueMessage(`${(e as any).members.first_name} ${(e as any).members.last_name}`, (e as any).membership_plans?.name || "Membership", e.end_date, daysLeft, gym)} label="WhatsApp reminder" />
                       )}
                     </li>
                   );
@@ -69,20 +89,21 @@ export default async function DashboardPage() {
             ) : <p className="text-sm text-muted-foreground">No memberships due in 7 days.</p>}
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader><CardTitle>Membership Ended</CardTitle></CardHeader>
+
+        <Card className="rounded-2xl border-0 bg-white/80 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
+          <CardHeader><CardTitle className="text-lg">Membership Ended</CardTitle></CardHeader>
           <CardContent>
             {ended && ended.length > 0 ? (
               <ul className="space-y-3 text-sm">
                 {(ended as any[]).map((e) => (
-                  <li key={e.id} className="flex flex-col gap-1.5 border-b pb-2.5">
-                    <div className="flex justify-between">
-                      <span className="font-medium">{e.members?.first_name} {e.members?.last_name}</span>
-                      <span className="text-destructive text-xs">Ended {e.end_date}</span>
+                  <li key={e.id} className="flex flex-col gap-2 rounded-xl border border-red-100 bg-red-50/60 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold">{e.members?.first_name} {e.members?.last_name}</span>
+                      <span className="text-[11px] font-medium text-destructive">Ended {e.end_date}</span>
                     </div>
                     <div className="text-xs text-muted-foreground">{(e as any).membership_plans?.name || "Membership"}</div>
                     {isAdmin && (e as any).members?.phone && (
-                      <WhatsAppButton phone={(e as any).members.phone} message={dueMessage(`${(e as any).members.first_name} ${(e as any).members.last_name}`, (e as any).membership_plans?.name || "Membership", e.end_date, -1)} label="WhatsApp – renewal" />
+                      <WhatsAppButton phone={(e as any).members.phone} message={dueMessage(`${(e as any).members.first_name} ${(e as any).members.last_name}`, (e as any).membership_plans?.name || "Membership", e.end_date, -1, gym)} label="WhatsApp – renewal" />
                     )}
                   </li>
                 ))}
@@ -91,15 +112,19 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-      <Card>
-        <CardHeader><CardTitle>Recent Members</CardTitle></CardHeader>
+
+      <Card className="rounded-2xl border-0 bg-white/80 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
+        <CardHeader><CardTitle className="text-lg">Recent Members</CardTitle></CardHeader>
         <CardContent>
           {recentMembers && recentMembers.length > 0 ? (
             <ul className="space-y-2 text-sm">
               {recentMembers.map((m) => (
-                <li key={m.id} className="flex justify-between border-b pb-2">
-                  <span>{m.first_name} {m.last_name} <span className="text-muted-foreground">({m.phone || "no phone"})</span></span>
-                  <span className="text-xs bg-muted px-2 py-0.5 rounded">{m.status}</span>
+                <li key={m.id} className="flex items-center justify-between gap-3 border-b border-slate-100 pb-2 last:border-b-0">
+                  <div>
+                    <div className="font-medium">{m.first_name} {m.last_name}</div>
+                    <div className="text-xs text-muted-foreground">{m.phone || "no phone"}</div>
+                  </div>
+                  <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">{m.status}</span>
                 </li>
               ))}
             </ul>

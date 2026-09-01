@@ -53,44 +53,52 @@ export default async function StaffPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <h1 className="text-xl sm:text-2xl font-bold">Staff</h1>
-        <Badge variant="outline">You: {myProfile?.role}</Badge>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">People</p>
+          <h1 className="text-2xl font-bold tracking-tight">Staff</h1>
+        </div>
+        <Badge variant="outline" className="w-fit rounded-full border-slate-200 bg-white/80 px-3 py-1 text-sm font-medium">You: {myProfile?.role}</Badge>
       </div>
 
       {isAdmin ? (
-        <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base sm:text-lg">Add Staff</CardTitle><CardDescription className="text-xs sm:text-sm">Staff can add members & collect payments. Admin approves activations.</CardDescription></CardHeader>
+        <Card className="rounded-2xl border-0 bg-white/80 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Add Staff</CardTitle>
+            <CardDescription className="text-xs">Staff can add members and record payments.</CardDescription>
+          </CardHeader>
           <CardContent>
             <form action={createStaff} className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-2"><Label>Email *</Label><Input name="email" type="email" required placeholder="staff@gym.com" className="h-11" /></div>
-                <div className="space-y-2"><Label>Password *</Label><Input name="password" type="password" required placeholder="min 6 chars" className="h-11" /></div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="space-y-2"><Label>Email *</Label><Input name="email" type="email" required placeholder="staff@gym.com" className="h-11 rounded-xl" /></div>
+                <div className="space-y-2"><Label>Password *</Label><Input name="password" type="password" required placeholder="min 6 chars" className="h-11 rounded-xl" /></div>
               </div>
-              <div className="space-y-2"><Label>Display Name</Label><Input name="display_name" placeholder="Front desk" className="h-11" /></div>
-              <Button type="submit" className="w-full sm:w-auto h-11">Create Staff Login</Button>
+              <div className="space-y-2"><Label>Display Name</Label><Input name="display_name" placeholder="Front desk" className="h-11 rounded-xl" /></div>
+              <Button type="submit" className="h-11 w-full rounded-xl sm:w-auto">Create Staff Login</Button>
             </form>
           </CardContent>
         </Card>
       ) : (
-        <Card><CardContent className="pt-6 text-sm text-muted-foreground">Only admin can manage staff. You are staff — use Members to add members and Payments to record collections (will go to Approvals).</CardContent></Card>
+        <Card className="rounded-2xl border-0 bg-white/80 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
+          <CardContent className="pt-6 text-sm text-muted-foreground">Only admin can manage staff. You are staff — use Members to add members and Payments to record collections (they will go to Approvals).</CardContent>
+        </Card>
       )}
 
-      <Card className="overflow-hidden">
-        <CardHeader className="pb-3"><CardTitle className="text-base sm:text-lg">All Users</CardTitle></CardHeader>
+      <Card className="overflow-hidden rounded-2xl border-0 bg-white/80 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
+        <CardHeader className="pb-3"><CardTitle className="text-lg">All Users</CardTitle></CardHeader>
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader><TableRow><TableHead className="min-w-[160px]">Email</TableHead><TableHead>Role</TableHead><TableHead className="hidden sm:table-cell">Name</TableHead><TableHead>Status</TableHead>{isAdmin && <TableHead></TableHead>}</TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead className="min-w-[160px]">Email</TableHead><TableHead>Role</TableHead><TableHead className="hidden sm:table-cell">Name</TableHead><TableHead>Status</TableHead>{isAdmin && <TableHead>Action</TableHead>}</TableRow></TableHeader>
             <TableBody>
               {staff?.map((s) => (
                 <TableRow key={s.id}>
-                  <TableCell className="text-sm font-medium break-all">{s.email} {s.id === user?.id && <span className="text-xs text-muted-foreground">(you)</span>}</TableCell>
-                  <TableCell><Badge variant={s.role === "admin" ? "default" : "secondary"} className="capitalize text-xs">{s.role}</Badge></TableCell>
-                  <TableCell className="hidden sm:table-cell text-sm">{s.display_name || "-"}</TableCell>
-                  <TableCell><Badge variant={s.is_active ? "outline" : "destructive"} className="text-xs">{s.is_active ? "Active" : "Disabled"}</Badge></TableCell>
+                  <TableCell className="break-all text-sm font-medium">{s.email} {s.id === user?.id && <span className="text-xs text-muted-foreground">(you)</span>}</TableCell>
+                  <TableCell><Badge variant={s.role === "admin" ? "default" : "secondary"} className="capitalize text-[10px] font-medium">{s.role}</Badge></TableCell>
+                  <TableCell className="hidden text-sm sm:table-cell">{s.display_name || "-"}</TableCell>
+                  <TableCell><Badge variant={s.is_active ? "outline" : "destructive"} className="text-[10px] font-medium">{s.is_active ? "Active" : "Disabled"}</Badge></TableCell>
                   {isAdmin && s.role === "staff" && (
                     <TableCell>
-                      <form action={toggleStaff.bind(null, s.id, !s.is_active)}><Button size="sm" variant="outline" className="h-8 text-xs">{s.is_active ? "Disable" : "Enable"}</Button></form>
+                      <form action={toggleStaff.bind(null, s.id, !s.is_active)}><Button size="sm" variant="outline" className="h-8 rounded-lg text-xs">{s.is_active ? "Disable" : "Enable"}</Button></form>
                     </TableCell>
                   )}
                 </TableRow>

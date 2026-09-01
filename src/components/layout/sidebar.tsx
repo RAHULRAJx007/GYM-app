@@ -32,7 +32,7 @@ function useRole() {
   return role;
 }
 
-export function Sidebar() {
+export function Sidebar({ gymName = "GymCore" }: { gymName?: string }) {
   const pathname = usePathname();
   const router = useRouter();
   const role = useRole();
@@ -46,14 +46,23 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="w-64 border-r bg-sidebar text-sidebar-foreground hidden md:flex flex-col border-sidebar-border">
-      <div className="p-6 flex items-center gap-2 font-bold text-lg border-b border-sidebar-border">
-        <Dumbbell className="h-5 w-5" /> GymCore
-        <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-sidebar-accent text-sidebar-accent-foreground border border-sidebar-border">
-          {role === "admin" ? "Admin" : role === "staff" ? "Staff" : "..."}
-        </span>
+    <aside className="hidden md:flex w-[260px] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-[inset_-1px_0_0_rgba(148,163,184,0.12)]">
+      <div className="p-5 border-b border-sidebar-border">
+        <div className="flex items-center gap-3 rounded-2xl bg-sidebar-accent/70 px-3 py-2.5 ring-1 ring-inset ring-sidebar-border">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-orange-900/20">
+            <Dumbbell className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-semibold tracking-wide">{gymName}</div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/70">Gym management</div>
+          </div>
+          <span className="rounded-full border border-sidebar-border bg-sidebar-accent px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-sidebar-foreground/80">
+            {role === "admin" ? "Admin" : role === "staff" ? "Staff" : "..."}
+          </span>
+        </div>
       </div>
-      <nav className="flex-1 p-4 space-y-1">
+
+      <nav className="flex-1 space-y-2 p-4">
         {filteredNav.map((item) => {
           const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
           return (
@@ -61,17 +70,25 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                active ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm" : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                active
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-orange-900/10"
+                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
               )}
             >
-              <item.icon className="h-4 w-4" /> {item.label}
+              <item.icon className="h-4 w-4 shrink-0" />
+              <span>{item.label}</span>
             </Link>
           );
         })}
       </nav>
-      <div className="p-4 border-t border-sidebar-border">
-        <Button variant="outline" className="w-full justify-start gap-2 bg-sidebar-accent hover:bg-sidebar-accent/80 border-sidebar-border" onClick={logout}>
+
+      <div className="border-t border-sidebar-border p-4">
+        <Button
+          variant="outline"
+          className="w-full justify-start gap-2 rounded-xl border-sidebar-border bg-sidebar-accent text-sidebar-foreground hover:bg-sidebar-accent/90"
+          onClick={logout}
+        >
           <LogOut className="h-4 w-4" /> Logout
         </Button>
       </div>
@@ -84,7 +101,7 @@ export function MobileNav() {
   const role = useRole();
   const filteredNav = nav.filter((item) => !(item as any).adminOnly || role === "admin");
   return (
-    <nav className="md:hidden flex gap-1.5 p-2 border-b overflow-x-auto scrollbar-none sticky top-0 bg-background z-10">
+    <nav className="md:hidden flex gap-1.5 overflow-x-auto border-b border-border bg-background/90 p-2 px-3 backdrop-blur-sm sticky top-0 z-10 scrollbar-none">
       {filteredNav.map((item) => {
         const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
         return (
@@ -92,8 +109,8 @@ export function MobileNav() {
             key={item.href}
             href={item.href}
             className={cn(
-              "px-3.5 py-2.5 rounded-full text-sm whitespace-nowrap font-medium flex items-center gap-1.5 min-h-[40px]",
-              active ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/80"
+              "flex min-h-[42px] items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-medium",
+              active ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-foreground/80"
             )}
           >
             <item.icon className="h-4 w-4 shrink-0" /> {item.label}
@@ -117,7 +134,7 @@ export function MobileBottomNav() {
   }
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-sidebar text-sidebar-foreground border-t border-sidebar-border z-20">
-      <div className="flex overflow-x-auto scrollbar-none items-center gap-1 px-1 py-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))]">
+      <div className="flex items-center gap-1 overflow-x-auto px-1 py-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] scrollbar-none">
         {filtered.map((item) => {
           const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
           return (
@@ -125,8 +142,8 @@ export function MobileBottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-1 px-2.5 py-1.5 rounded-lg min-w-[64px] shrink-0",
-                active ? "text-sidebar-primary bg-sidebar-accent" : "text-sidebar-foreground/70"
+                "flex min-w-[64px] shrink-0 flex-col items-center gap-1 rounded-xl px-2.5 py-1.5",
+                active ? "bg-sidebar-accent text-sidebar-foreground" : "text-sidebar-foreground/70"
               )}
             >
               <item.icon className="h-5 w-5" />
@@ -134,7 +151,10 @@ export function MobileBottomNav() {
             </Link>
           );
         })}
-        <button onClick={logout} className="flex flex-col items-center gap-1 px-2.5 py-1.5 rounded-lg min-w-[64px] shrink-0 text-sidebar-foreground/70">
+        <button
+          onClick={logout}
+          className="flex min-w-[64px] shrink-0 flex-col items-center gap-1 rounded-xl px-2.5 py-1.5 text-sidebar-foreground/70"
+        >
           <LogOut className="h-5 w-5" />
           <span className="text-[10px] font-medium leading-none">Logout</span>
         </button>

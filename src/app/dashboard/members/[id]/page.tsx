@@ -1,16 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { assignMembership, recordPayment, checkIn, deleteMember, updateMember } from "@/lib/actions/members";
+import { assignMembership, recordPayment, checkIn, deleteMember, updateMember, renewMembership } from "@/lib/actions/members";
 import Link from "next/link";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { WhatsAppButton } from "@/components/whatsapp-button";
 import { dueMessage } from "@/lib/whatsapp-link";
+import { RenewMembershipForm } from "@/components/renew-membership-form";
 
 export default async function MemberDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -18,6 +19,7 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
   const { data: { user } } = await supabase.auth.getUser();
   const { data: profile } = user ? await supabase.from("profiles").select("role").eq("id", user.id).single() : { data: null } as any;
   const isAdmin = profile?.role === "admin";
+  const { data: gym } = await supabase.from("gym_settings").select("name, phone, address, email").order("created_at", { ascending: false }).limit(1).maybeSingle();
   const { data: member } = await supabase.from("members").select("*").eq("id", id).single();
   if (!member) notFound();
 
@@ -67,7 +69,7 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
               <div className="pt-3">
                 <WhatsAppButton
                   phone={member.phone}
-                  message={dueMessage(`${member.first_name} ${member.last_name}`, (activeMembership as any).membership_plans?.name || "Membership", activeMembership.end_date, daysLeftActive!)}
+                  message={dueMessage(`${member.first_name} ${member.last_name}`, (activeMembership as any).membership_plans?.name || "Membership", activeMembership.end_date, daysLeftActive!, gym)}
                   label={isEnded ? "WhatsApp – renewal" : `WhatsApp – due in ${daysLeftActive}d`}
                   size="default"
                   className="w-full"
@@ -86,7 +88,7 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
 
         <div className="md:col-span-2 space-y-6">
           <Card>
-            <CardHeader><CardTitle>{isAdmin ? "Current Membership" : "Membership"}</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{isAdmin ? (isEnded ? "Renew / Change Plan" : activeMembership ? "Current Membership" : "Assign Membership") : "Membership"}</CardTitle></CardHeader>
             <CardContent>
               {hasPending ? (
                 <div className="text-sm rounded-md border border-amber-200 bg-amber-50 p-3">
@@ -98,19 +100,32 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
                 <div className="text-sm space-y-2">
                   <p className="font-medium">{(activeMembership as any).membership_plans?.name} — {formatCurrency(Number((activeMembership as any).price_paid || (activeMembership as any).membership_plans?.price || 0))}</p>
                   <p className="text-muted-foreground">{activeMembership.start_date} → {activeMembership.end_date} ({activeMembership.status}) {(isDue || isEnded) && <span className={isEnded ? "text-destructive font-medium" : "text-amber-600 font-medium"}>• {isEnded ? "Ended" : `Due in ${daysLeftActive}d`}</span>}</p>
-                  {isAdmin && (isDue || isEnded) && member.phone && (
-                    <WhatsAppButton phone={member.phone} message={dueMessage(`${member.first_name} ${member.last_name}`, (activeMembership as any).membership_plans?.name || "Membership", activeMembership.end_date, daysLeftActive!)} label={isEnded ? "WhatsApp – renewal needed" : "WhatsApp reminder"} size="default" />
-                  )}
                 </div>
               ) : <p className="text-sm text-muted-foreground">No active membership.</p>}
               {isAdmin ? (
-                <form action={assignMembership.bind(null, id)} className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <select name="plan_id" required className="border rounded-md px-3 py-2 text-sm h-11 bg-transparent"><option value="">Select Plan</option>{plans?.map((p) => <option key={p.id} value={p.id}>{p.name} — {formatCurrency(Number(p.price))} / {p.duration_days}d</option>)}</select>
-                  <Input name="price_paid" type="number" placeholder="Price paid (optional)" className="h-11" />
-                  <Input name="start_date" type="date" required lang="en-GB" defaultValue={new Date().toISOString().slice(0,10)} className="h-11" />
-                  <Input name="end_date" type="date" required lang="en-GB" className="h-11" />
-                  <Button type="submit" className="col-span-1 sm:col-span-2 h-11">Assign Plan</Button>
-                </form>
+                !activeMembership && !hasPending ? (
+                  <form action={assignMembership.bind(null, id)} className="mt-4 space-y-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <select name="plan_id" required className="border rounded-md px-3 py-2 text-sm h-11 bg-transparent"><option value="">Select Plan</option>{plans?.map((p) => <option key={p.id} value={p.id}>{p.name} — {formatCurrency(Number(p.price))} / {p.duration_days}d</option>)}</select>
+                      <Input name="price_paid" type="number" placeholder="Amount (auto from plan)" className="h-11" />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <Input name="start_date" type="date" required lang="en-GB" defaultValue={new Date().toISOString().slice(0,10)} className="h-11" />
+                      <select name="payment_method" className="border rounded-md px-3 text-sm h-11 bg-transparent"><option value="upi">UPI</option><option value="cash">Cash</option><option value="card">Card</option><option value="bank_transfer">Bank Transfer</option><option value="other">Other</option></select>
+                    </div>
+                    <Button type="submit" className="w-full h-11">Assign Membership</Button>
+                    <p className="text-xs text-muted-foreground">New member setup. Payment is auto-created from the selected plan and method.</p>
+                  </form>
+                ) : (
+                  <RenewMembershipForm
+                    memberId={id}
+                    plans={plans ?? []}
+                    currentMembership={activeMembership}
+                    isEnded={isEnded}
+                    submitLabel={isEnded ? "Renew Membership" : "Renew / Change Plan"}
+                    action={renewMembership}
+                  />
+                )
               ) : (
                 <p className="text-xs text-muted-foreground mt-3">Membership manage: admin only. Staff creates via Add Member.</p>
               )}
@@ -118,23 +133,11 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>{isAdmin ? "Record Payment" : "Payment History"}</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Payment History</CardTitle><CardDescription className="text-xs">Auto-created when you assign/renew membership — no manual entry</CardDescription></CardHeader>
             <CardContent>
-              {isAdmin ? (
-                <form action={recordPayment.bind(null, id)} className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <Input name="amount" type="number" step="0.01" placeholder="Amount *" required className="h-11" />
-                  <select name="payment_method" className="border rounded-md px-3 text-sm h-11 bg-transparent"><option value="cash">Cash</option><option value="card">Card</option><option value="upi">UPI</option><option value="bank_transfer">Bank Transfer</option><option value="other">Other</option></select>
-                  <Input name="payment_date" type="date" lang="en-GB" defaultValue={new Date().toISOString().slice(0,10)} className="h-11" />
-                  <select name="membership_id" className="border rounded-md px-3 text-sm h-11 bg-transparent"><option value="">Link to membership (optional)</option>{memberships?.map((m) => <option key={m.id} value={m.id}>{m.start_date} → {m.end_date}</option>)}</select>
-                  <Input name="notes" placeholder="Notes" className="col-span-1 sm:col-span-2 h-11" />
-                  <Button type="submit" className="col-span-1 sm:col-span-2 h-11">Record Payment</Button>
-                </form>
-              ) : (
-                <p className="text-xs text-muted-foreground mb-3">Payments are recorded when you send membership approval. Admin approves them.</p>
-              )}
-              <div className="mt-4 space-y-1 text-sm">
+              <div className="space-y-1 text-sm">
                 {payments?.map((p) => (
-                  <div key={p.id} className="flex justify-between border-b py-1"><span>{formatDate(p.payment_date)} • {p.payment_method} • {p.receipt_number} <Badge variant="outline" className="ml-1 text-[10px]">{p.status}</Badge></span><span className="font-medium">{formatCurrency(Number(p.amount))}</span></div>
+                  <div key={p.id} className="flex justify-between border-b py-1.5 gap-2"><span className="min-w-0 truncate">{formatDate(p.payment_date)} • {p.payment_method} • {p.receipt_number} <Badge variant="outline" className="ml-1 text-[10px]">{p.status}</Badge>{(p as any).proof_url && <a href={(p as any).proof_url} target="_blank" className="ml-1 underline text-primary">SS</a>}</span><span className="font-medium shrink-0">{formatCurrency(Number(p.amount))}</span></div>
                 ))}
                 {(!payments || payments.length === 0) && <p className="text-muted-foreground">No payments yet.</p>}
               </div>
@@ -157,7 +160,7 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
               {!isAdmin && !hasPending ? (
                 <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Editing locked after admin approval. Only admin can edit now.</div>
               ) : (
-                <form action={updateMember.bind(null, id)} className="space-y-3">
+                <form key={`${member.id}-${member.updated_at}`} action={updateMember.bind(null, id)} className="space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div><Label>First Name</Label><Input name="first_name" defaultValue={member.first_name} required className="h-11" /></div>
                     <div><Label>Last Name</Label><Input name="last_name" defaultValue={member.last_name} required className="h-11" /></div>
