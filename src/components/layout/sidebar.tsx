@@ -103,28 +103,39 @@ export function MobileNav() {
 
 export function MobileBottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const role = useRole();
   const filtered = nav.filter((item) => !(item as any).adminOnly || role === "admin");
-  // show only 5 primary items on bottom for thumb reach
-  const bottomNav = filtered.slice(0, 5);
+  async function logout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/");
+    router.refresh();
+  }
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t flex justify-around items-center py-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] z-20">
-      {bottomNav.map((item) => {
-        const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg min-w-[60px]",
-              active ? "text-primary" : "text-muted-foreground"
-            )}
-          >
-            <item.icon className={cn("h-5 w-5", active && "fill-primary/10")} />
-            <span className="text-[10px] font-medium leading-none">{item.label}</span>
-          </Link>
-        );
-      })}
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-20">
+      <div className="flex overflow-x-auto scrollbar-none items-center gap-1 px-1 py-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))]">
+        {filtered.map((item) => {
+          const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex flex-col items-center gap-1 px-2.5 py-1.5 rounded-lg min-w-[64px] shrink-0",
+                active ? "text-primary bg-primary/10" : "text-muted-foreground"
+              )}
+            >
+              <item.icon className="h-5 w-5" />
+              <span className="text-[10px] font-medium leading-none">{item.label}</span>
+            </Link>
+          );
+        })}
+        <button onClick={logout} className="flex flex-col items-center gap-1 px-2.5 py-1.5 rounded-lg min-w-[64px] shrink-0 text-muted-foreground">
+          <LogOut className="h-5 w-5" />
+          <span className="text-[10px] font-medium leading-none">Logout</span>
+        </button>
+      </div>
     </nav>
   );
 }
