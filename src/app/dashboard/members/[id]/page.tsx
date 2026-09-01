@@ -13,6 +13,9 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 export default async function MemberDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: profile } = user ? await supabase.from("profiles").select("role").eq("id", user.id).single() : { data: null } as any;
+  const isAdmin = profile?.role === "admin";
   const { data: member } = await supabase.from("members").select("*").eq("id", id).single();
   if (!member) notFound();
 
@@ -45,8 +48,11 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
             <p><span className="text-muted-foreground">Emergency:</span> {member.emergency_contact_name || "-"} {member.emergency_contact_phone || ""}</p>
             <p><span className="text-muted-foreground">Medical:</span> {member.medical_notes || "-"}</p>
             <div className="pt-4 flex gap-2">
-              <form action={checkIn.bind(null, id)}><Button size="sm" type="submit">Check In</Button></form>
-              <form action={deleteMember.bind(null, id)}><Button size="sm" variant="destructive" type="submit">Delete</Button></form>
+              {isAdmin ? (
+                <form action={deleteMember.bind(null, id)}><Button size="sm" variant="destructive" type="submit">Delete</Button></form>
+              ) : (
+                <p className="text-xs text-muted-foreground py-1">Delete: admin only</p>
+              )}
             </div>
           </CardContent>
         </Card>

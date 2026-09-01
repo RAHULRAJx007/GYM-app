@@ -4,6 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function createPlan(formData: FormData) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    if (profile?.role !== "admin") throw new Error("Only admin can create plans");
+  }
   const payload = {
     name: String(formData.get("name") || ""),
     description: String(formData.get("description") || "") || null,
@@ -20,6 +25,11 @@ export async function createPlan(formData: FormData) {
 
 export async function updatePlan(id: string, formData: FormData) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    if (profile?.role !== "admin") throw new Error("Only admin can edit plans");
+  }
   const payload = {
     name: String(formData.get("name") || ""),
     description: String(formData.get("description") || "") || null,
@@ -35,6 +45,11 @@ export async function updatePlan(id: string, formData: FormData) {
 
 export async function deletePlan(id: string) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    if (profile?.role !== "admin") throw new Error("Only admin can delete plans");
+  }
   const { error } = await supabase.from("membership_plans").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard/plans");

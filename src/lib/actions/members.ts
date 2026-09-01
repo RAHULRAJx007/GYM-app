@@ -140,9 +140,16 @@ export async function updateMember(id: string, formData: FormData) {
 
 export async function deleteMember(id: string) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    if (profile?.role !== "admin") throw new Error("Only admin can delete members");
+  }
   const { error } = await supabase.from("members").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard/members");
+  const { redirect } = await import("next/navigation");
+  redirect("/dashboard/members");
 }
 
 export async function assignMembership(memberId: string, formData: FormData) {

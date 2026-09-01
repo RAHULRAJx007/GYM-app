@@ -46,9 +46,12 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="w-64 border-r bg-card hidden md:flex flex-col">
-      <div className="p-6 flex items-center gap-2 font-bold text-lg border-b">
+    <aside className="w-64 border-r bg-sidebar text-sidebar-foreground hidden md:flex flex-col border-sidebar-border">
+      <div className="p-6 flex items-center gap-2 font-bold text-lg border-b border-sidebar-border">
         <Dumbbell className="h-5 w-5" /> GymCore
+        <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-sidebar-accent text-sidebar-accent-foreground border border-sidebar-border">
+          {role === "admin" ? "Admin" : role === "staff" ? "Staff" : "..."}
+        </span>
       </div>
       <nav className="flex-1 p-4 space-y-1">
         {filteredNav.map((item) => {
@@ -58,8 +61,8 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium",
-                active ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                active ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm" : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               )}
             >
               <item.icon className="h-4 w-4" /> {item.label}
@@ -67,8 +70,8 @@ export function Sidebar() {
           );
         })}
       </nav>
-      <div className="p-4 border-t">
-        <Button variant="outline" className="w-full justify-start gap-2" onClick={logout}>
+      <div className="p-4 border-t border-sidebar-border">
+        <Button variant="outline" className="w-full justify-start gap-2 bg-sidebar-accent hover:bg-sidebar-accent/80 border-sidebar-border" onClick={logout}>
           <LogOut className="h-4 w-4" /> Logout
         </Button>
       </div>
@@ -113,7 +116,7 @@ export function MobileBottomNav() {
     router.refresh();
   }
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-20">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-sidebar text-sidebar-foreground border-t border-sidebar-border z-20">
       <div className="flex overflow-x-auto scrollbar-none items-center gap-1 px-1 py-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))]">
         {filtered.map((item) => {
           const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
@@ -123,7 +126,7 @@ export function MobileBottomNav() {
               href={item.href}
               className={cn(
                 "flex flex-col items-center gap-1 px-2.5 py-1.5 rounded-lg min-w-[64px] shrink-0",
-                active ? "text-primary bg-primary/10" : "text-muted-foreground"
+                active ? "text-sidebar-primary bg-sidebar-accent" : "text-sidebar-foreground/70"
               )}
             >
               <item.icon className="h-5 w-5" />
@@ -131,7 +134,7 @@ export function MobileBottomNav() {
             </Link>
           );
         })}
-        <button onClick={logout} className="flex flex-col items-center gap-1 px-2.5 py-1.5 rounded-lg min-w-[64px] shrink-0 text-muted-foreground">
+        <button onClick={logout} className="flex flex-col items-center gap-1 px-2.5 py-1.5 rounded-lg min-w-[64px] shrink-0 text-sidebar-foreground/70">
           <LogOut className="h-5 w-5" />
           <span className="text-[10px] font-medium leading-none">Logout</span>
         </button>

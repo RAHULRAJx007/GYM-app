@@ -32,23 +32,23 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-muted/40 to-background">
+    <div className="theme-login min-h-screen flex flex-col bg-gradient-to-br from-orange-50 via-white to-amber-50 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-800">
       {/* Header - minimal, responsive */}
       <header className="px-4 sm:px-6 py-4 flex items-center justify-center sm:justify-start max-w-6xl w-full mx-auto">
         <div className="flex items-center gap-2 font-bold text-lg sm:text-xl">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+          <div className="h-8 w-8 rounded-lg bg-primary shadow-md flex items-center justify-center">
             <Dumbbell className="h-4 w-4 text-primary-foreground" />
           </div>
-          GymCore
+          GymCore<span className="text-primary font-extrabold">.</span>
         </div>
       </header>
 
       {/* Centered login - fully responsive for phone/tablet */}
       <main className="flex-1 flex items-center justify-center px-4 py-6 sm:py-10">
-        <Card className="w-full max-w-[420px] shadow-lg border-muted">
+        <Card className="w-full max-w-[420px] shadow-xl border-orange-100 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80">
           <CardHeader className="text-center space-y-1 pb-4">
-            <div className="mx-auto h-12 w-12 rounded-2xl bg-primary flex items-center justify-center mb-2">
-              <Dumbbell className="h-6 w-6 text-primary-foreground" />
+            <div className="mx-auto h-12 w-12 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 shadow-lg flex items-center justify-center mb-2">
+              <Dumbbell className="h-6 w-6 text-white" />
             </div>
             <CardTitle className="text-xl sm:text-2xl">Welcome back</CardTitle>
             <CardDescription className="text-sm">Sign in to manage your gym</CardDescription>
