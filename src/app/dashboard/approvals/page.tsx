@@ -12,19 +12,36 @@ async function approveMembership(id: string) {
   const { createClient: createSupabase } = await import("@/lib/supabase/server");
   const supabase = await createSupabase();
   const { data: { user } } = await supabase.auth.getUser();
+  console.log("[approveMembership] user", user?.id, "id", id);
   let { error } = await supabase.from("member_memberships").update({ status: "active", approved_by: user?.id, approved_at: new Date().toISOString() } as any).eq("id", id);
   if (error && (error.code === "PGRST204" || String(error.message).includes("approved_by"))) {
+    console.log("[approveMembership] retry without approved_by", error.message);
     const retry = await supabase.from("member_memberships").update({ status: "active" } as any).eq("id", id);
     error = retry.error as any;
   }
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("[approveMembership] failed", error);
+    throw new Error(error.message);
+  }
+  console.log("[approveMembership] success");
   revalidatePath("/dashboard/approvals");
+  revalidatePath("/dashboard");
 }
 async function rejectMembership(id: string) {
   "use server";
   const { createClient: createSupabase } = await import("@/lib/supabase/server");
   const supabase = await createSupabase();
-  await supabase.from("member_memberships").update({ status: "rejected" } as any).eq("id", id);
+  await supabase.from("member_memberships").update({ status: "rejected", updated_at: new Date().toISOString() } as any).eq("id", id);
+  // FIFO: keep only 30 rejected, delete oldest when new one comes
+  const { data: rejected } = await supabase.from("member_memberships").select("id,updated_at").eq("status", "rejected").order("updated_at", { ascending: true });
+  if (rejected && rejected.length > 30) {
+    const toDelete = rejected.slice(0, rejected.length - 30).map((r: any) => r.id);
+    for (const delId of toDelete) {
+      const { data: mm } = await supabase.from("member_memberships").select("member_id").eq("id", delId).single();
+      await supabase.from("member_memberships").delete().eq("id", delId);
+      // If this was the only membership for that member and member was created via rejected flow, optionally keep member - we keep member for history
+    }
+  }
   revalidatePath("/dashboard/approvals");
 }
 async function approvePayment(id: string) {
@@ -53,6 +70,39 @@ async function rejectPayment(id: string) {
   const { createClient: createSupabase } = await import("@/lib/supabase/server");
   const supabase = await createSupabase();
   await supabase.from("payments").update({ status: "rejected" } as any).eq("id", id);
+  const { data: rejected } = await supabase.from("payments").select("id").eq("status", "rejected").order("created_at", { ascending: true });
+  if (rejected && rejected.length > 30) {
+    const toDelete = rejected.slice(0, rejected.length - 30).map((r: any) => r.id);
+    for (const delId of toDelete) await supabase.from("payments").delete().eq("id", delId);
+  }
+  revalidatePath("/dashboard/approvals");
+}
+async function reapproveMembership(id: string) {
+  "use server";
+  const { createClient: createSupabase } = await import("@/lib/supabase/server");
+  const supabase = await createSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  let { error } = await supabase.from("member_memberships").update({ status: "active", approved_by: user?.id, approved_at: new Date().toISOString() } as any).eq("id", id).eq("status", "rejected");
+  if (error && (error.code === "PGRST204" || String(error.message).includes("approved_by"))) {
+    const retry = await supabase.from("member_memberships").update({ status: "active" } as any).eq("id", id).eq("status", "rejected");
+    error = retry.error as any;
+  }
+  if (error) throw new Error(error.message);
+  // also re-approve linked payment if still rejected
+  await supabase.from("payments").update({ status: "completed" } as any).eq("membership_id", id).eq("status", "rejected");
+  revalidatePath("/dashboard/approvals");
+}
+async function reapprovePayment(id: string) {
+  "use server";
+  const { createClient: createSupabase } = await import("@/lib/supabase/server");
+  const supabase = await createSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  let { error } = await supabase.from("payments").update({ status: "completed", approved_by: user?.id, approved_at: new Date().toISOString() } as any).eq("id", id).eq("status", "rejected");
+  if (error && (error.code === "PGRST204" || String(error.message).includes("approved_by"))) {
+    const retry = await supabase.from("payments").update({ status: "completed" } as any).eq("id", id).eq("status", "rejected");
+    error = retry.error as any;
+  }
+  if (error) throw new Error(error.message);
   revalidatePath("/dashboard/approvals");
 }
 
@@ -70,9 +120,11 @@ export default async function ApprovalsPage() {
     );
   }
 
-  const [{ data: pendingMemberships }, { data: pendingPaymentsRaw }] = await Promise.all([
+  const [{ data: pendingMemberships }, { data: pendingPaymentsRaw }, { data: rejectedMemberships }, { data: rejectedPayments }] = await Promise.all([
     supabase.from("member_memberships").select("id,start_date,end_date,price_paid,notes,status,created_at,members(id,first_name,last_name,phone,email,address,gender,date_of_birth,emergency_contact_name,emergency_contact_phone,medical_notes),membership_plans(id,name,category,price,duration_days,description)").eq("status", "pending").order("created_at", { ascending: false }).limit(50),
     supabase.from("payments").select("id,amount,payment_method,payment_date,notes,status,created_at,membership_id,members(first_name,last_name,phone,email)").eq("status", "pending").order("created_at", { ascending: false }).limit(50),
+    supabase.from("member_memberships").select("id,start_date,end_date,price_paid,notes,status,created_at,updated_at,members(id,first_name,last_name,phone,email),membership_plans(id,name,category,price,duration_days,description)").eq("status", "rejected").order("updated_at", { ascending: false }).limit(30),
+    supabase.from("payments").select("id,amount,payment_method,payment_date,notes,status,created_at,members(first_name,last_name,phone,email)").eq("status", "rejected").order("created_at", { ascending: false }).limit(30),
   ]);
   // Deduplicate: payments linked to a pending membership are already shown inside that membership card, don't show twice
   const pendingMembershipIds = new Set((pendingMemberships as any[] || []).map((m) => m.id));
@@ -147,6 +199,36 @@ export default async function ApprovalsPage() {
             </TableBody>
           </Table>
         </div>
+      </Card>
+
+      <Card className="overflow-hidden border-amber-200">
+        <CardHeader className="pb-3"><CardTitle className="text-base sm:text-lg flex items-center gap-2">Rejected <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">{(rejectedMemberships?.length || 0) + (rejectedPayments?.length || 0)} / 30</Badge></CardTitle><CardDescription className="text-xs">Accidentally rejected? Approve again. Keeps last 30 — oldest auto-deleted when new rejection comes.</CardDescription></CardHeader>
+        <CardContent className="space-y-3">
+          {(!rejectedMemberships?.length && !rejectedPayments?.length) ? (
+            <p className="text-center py-6 text-sm text-muted-foreground">No rejected requests.</p>
+          ) : (
+            <>
+              {(rejectedMemberships as any[])?.map((m) => (
+                <div key={`rm-${m.id}`} className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-medium text-sm">{m.members?.first_name} {m.members?.last_name} <span className="text-xs text-muted-foreground">• {m.members?.phone || ""}</span> <Badge variant="outline" className="ml-1 text-[10px] bg-white">{m.membership_plans?.name}</Badge></div>
+                    <div className="text-xs text-muted-foreground">{m.start_date} → {m.end_date} • {formatCurrency(Number(m.price_paid || m.membership_plans?.price || 0))} • Rejected {m.updated_at ? formatDate(m.updated_at) : formatDate(m.created_at)}</div>
+                  </div>
+                  <form action={reapproveMembership.bind(null, m.id)}><Button size="sm" className="w-full sm:w-auto">Approve again</Button></form>
+                </div>
+              ))}
+              {(rejectedPayments as any[])?.map((p) => (
+                <div key={`rp-${p.id}`} className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-medium text-sm">{p.members?.first_name} {p.members?.last_name} <span className="text-xs text-muted-foreground">• {p.members?.phone || ""}</span></div>
+                    <div className="text-xs text-muted-foreground">{formatCurrency(Number(p.amount))} • {p.payment_method} • {formatDate(p.payment_date)} • Rejected</div>
+                  </div>
+                  <form action={reapprovePayment.bind(null, p.id)}><Button size="sm" className="w-full sm:w-auto">Approve again</Button></form>
+                </div>
+              ))}
+            </>
+          )}
+        </CardContent>
       </Card>
     </div>
   );

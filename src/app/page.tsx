@@ -95,9 +95,6 @@ export default function Home() {
               <Button type="submit" className="w-full h-11 text-base font-medium" disabled={loading}>
                 {loading ? "Signing in..." : "Sign In"}
               </Button>
-              <p className="text-xs text-center text-muted-foreground pt-2">
-                Admin: admin@gym.local • Staff: staff@gym.local
-              </p>
             </form>
           </CardContent>
         </Card>
