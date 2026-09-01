@@ -11,6 +11,9 @@ import { formatCurrency } from "@/lib/utils";
 
 export default async function NewMemberPage() {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: profile } = user ? await supabase.from("profiles").select("role").eq("id", user.id).single() : { data: null } as any;
+  const isStaff = profile?.role === "staff";
   const { data: plans } = await supabase.from("membership_plans").select("id,name,price,duration_days,category").eq("is_active", true).order("price");
   const membershipPlans = (plans || []).filter((p: any) => p.category === "membership");
   const ptPlans = (plans || []).filter((p: any) => p.category === "personal_training");
@@ -30,8 +33,8 @@ export default async function NewMemberPage() {
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Member Details</CardTitle>
-          <CardDescription className="text-xs sm:text-sm">Fill details. Pick a plan — staff requests will need admin approval.</CardDescription>
+          <CardTitle className="text-lg">{isStaff ? "New Membership Request" : "Member Details"}</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">{isStaff ? "Fill details and send for admin approval. Member will be active after admin approves." : "Fill details. Pick a plan — will be active immediately."}</CardDescription>
         </CardHeader>
         <CardContent>
           <form action={action} className="space-y-5">
@@ -82,11 +85,12 @@ export default async function NewMemberPage() {
                 <div className="space-y-2"><Label>Amount Paid</Label><Input name="price_paid" type="number" step="0.01" placeholder="Auto from plan" className="h-11" /></div>
                 <div className="space-y-2"><Label>Payment Method</Label><select name="payment_method" className="flex h-11 w-full rounded-md border px-3 text-sm"><option value="cash">Cash</option><option value="upi">UPI</option><option value="card">Card</option><option value="bank_transfer">Bank Transfer</option><option value="other">Other</option></select></div>
               </div>
-              <p className="text-xs text-muted-foreground">Staff: payment will be marked pending until admin approves. Admin: auto-approved.</p>
+              <p className="text-xs text-muted-foreground">{isStaff ? "This will be sent to Approvals. Admin will see member + payment details there." : "Admin: auto-approved and active immediately."}</p>
             </div>
 
-            <div className="space-y-2"><Label>Status</Label><select name="status" defaultValue="active" className="flex h-11 w-full rounded-md border px-3 text-sm"><option value="active">Active</option><option value="inactive">Inactive</option><option value="frozen">Frozen</option><option value="cancelled">Cancelled</option></select></div>
-            <Button type="submit" className="w-full h-11 text-base">Create Member + Assign Plan</Button>
+            {!isStaff && <div className="space-y-2"><Label>Status</Label><select name="status" defaultValue="active" className="flex h-11 w-full rounded-md border px-3 text-sm"><option value="active">Active</option><option value="inactive">Inactive</option><option value="frozen">Frozen</option><option value="cancelled">Cancelled</option></select></div>}
+            {isStaff && <input type="hidden" name="status" value="active" />}
+            <Button type="submit" className="w-full h-11 text-base">{isStaff ? "Send Membership Approval" : "Create Member + Assign Plan"}</Button>
           </form>
         </CardContent>
       </Card>

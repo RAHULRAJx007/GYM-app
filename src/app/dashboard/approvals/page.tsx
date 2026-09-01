@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,14 +11,19 @@ async function approveMembership(id: string) {
   const { createClient: createSupabase } = await import("@/lib/supabase/server");
   const supabase = await createSupabase();
   const { data: { user } } = await supabase.auth.getUser();
-  await supabase.from("member_memberships").update({ status: "active", approved_by: user?.id, approved_at: new Date().toISOString() }).eq("id", id);
+  let { error } = await supabase.from("member_memberships").update({ status: "active", approved_by: user?.id, approved_at: new Date().toISOString() } as any).eq("id", id);
+  if (error && (error.code === "PGRST204" || String(error.message).includes("approved_by"))) {
+    const retry = await supabase.from("member_memberships").update({ status: "active" } as any).eq("id", id);
+    error = retry.error as any;
+  }
+  if (error) throw new Error(error.message);
   revalidatePath("/dashboard/approvals");
 }
 async function rejectMembership(id: string) {
   "use server";
   const { createClient: createSupabase } = await import("@/lib/supabase/server");
   const supabase = await createSupabase();
-  await supabase.from("member_memberships").update({ status: "rejected" }).eq("id", id);
+  await supabase.from("member_memberships").update({ status: "rejected" } as any).eq("id", id);
   revalidatePath("/dashboard/approvals");
 }
 async function approvePayment(id: string) {
@@ -26,17 +31,27 @@ async function approvePayment(id: string) {
   const { createClient: createSupabase } = await import("@/lib/supabase/server");
   const supabase = await createSupabase();
   const { data: { user } } = await supabase.auth.getUser();
-  await supabase.from("payments").update({ status: "completed", approved_by: user?.id, approved_at: new Date().toISOString() }).eq("id", id);
-  // also activate linked membership if still pending
+  let { error } = await supabase.from("payments").update({ status: "completed", approved_by: user?.id, approved_at: new Date().toISOString() } as any).eq("id", id);
+  if (error && (error.code === "PGRST204" || String(error.message).includes("approved_by"))) {
+    const retry = await supabase.from("payments").update({ status: "completed" } as any).eq("id", id);
+    error = retry.error as any;
+  }
+  if (error) throw new Error(error.message);
   const { data: pay } = await supabase.from("payments").select("membership_id").eq("id", id).single();
-  if (pay?.membership_id) await supabase.from("member_memberships").update({ status: "active", approved_by: user?.id, approved_at: new Date().toISOString() }).eq("id", pay.membership_id).eq("status", "pending");
+  if (pay?.membership_id) {
+    let { error: mmErr } = await supabase.from("member_memberships").update({ status: "active", approved_by: user?.id, approved_at: new Date().toISOString() } as any).eq("id", pay.membership_id).eq("status", "pending");
+    if (mmErr && (mmErr.code === "PGRST204" || String(mmErr.message).includes("approved_by"))) {
+      const retry = await supabase.from("member_memberships").update({ status: "active" } as any).eq("id", pay.membership_id).eq("status", "pending");
+      mmErr = retry.error as any;
+    }
+  }
   revalidatePath("/dashboard/approvals");
 }
 async function rejectPayment(id: string) {
   "use server";
   const { createClient: createSupabase } = await import("@/lib/supabase/server");
   const supabase = await createSupabase();
-  await supabase.from("payments").update({ status: "rejected" }).eq("id", id);
+  await supabase.from("payments").update({ status: "rejected" } as any).eq("id", id);
   revalidatePath("/dashboard/approvals");
 }
 
@@ -55,8 +70,8 @@ export default async function ApprovalsPage() {
   }
 
   const [{ data: pendingMemberships }, { data: pendingPayments }] = await Promise.all([
-    supabase.from("member_memberships").select("id,start_date,end_date,price_paid,status,created_at,members(first_name,last_name,phone),membership_plans(name,category,price)").eq("status", "pending").order("created_at", { ascending: false }).limit(50),
-    supabase.from("payments").select("id,amount,payment_method,payment_date,status,created_at,members(first_name,last_name,phone)").eq("status", "pending").order("created_at", { ascending: false }).limit(50),
+    supabase.from("member_memberships").select("id,start_date,end_date,price_paid,notes,status,created_at,members(id,first_name,last_name,phone,email,address,gender,date_of_birth,emergency_contact_name,emergency_contact_phone,medical_notes),membership_plans(id,name,category,price,duration_days,description)").eq("status", "pending").order("created_at", { ascending: false }).limit(50),
+    supabase.from("payments").select("id,amount,payment_method,payment_date,notes,status,created_at,membership_id,members(first_name,last_name,phone,email)").eq("status", "pending").order("created_at", { ascending: false }).limit(50),
   ]);
 
   return (
@@ -67,29 +82,41 @@ export default async function ApprovalsPage() {
       </div>
 
       <Card className="overflow-hidden">
-        <CardHeader className="pb-3"><CardTitle className="text-base sm:text-lg">Pending Memberships ({pendingMemberships?.length || 0})</CardTitle></CardHeader>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader><TableRow><TableHead className="min-w-[140px]">Member</TableHead><TableHead>Plan</TableHead><TableHead className="hidden sm:table-cell">Period</TableHead><TableHead>Amount</TableHead><TableHead className="min-w-[160px]"></TableHead></TableRow></TableHeader>
-            <TableBody>
-              {(pendingMemberships as any[])?.map((m) => (
-                <TableRow key={m.id}>
-                  <TableCell><div className="font-medium text-sm">{m.members?.first_name} {m.members?.last_name}</div><div className="text-xs text-muted-foreground">{m.members?.phone}</div></TableCell>
-                  <TableCell><div className="text-sm font-medium">{m.membership_plans?.name}</div><div className="text-xs"><Badge variant="outline" className="text-[10px]">{m.membership_plans?.category === "personal_training" ? "PT" : "Gym"}</Badge></div></TableCell>
-                  <TableCell className="hidden sm:table-cell text-xs whitespace-nowrap">{m.start_date} → {m.end_date}</TableCell>
-                  <TableCell className="text-sm whitespace-nowrap">{formatCurrency(Number(m.price_paid || m.membership_plans?.price || 0))}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <form action={approveMembership.bind(null, m.id)}><Button size="sm" className="h-8">Approve</Button></form>
-                      <form action={rejectMembership.bind(null, m.id)}><Button size="sm" variant="destructive" className="h-8">Reject</Button></form>
+        <CardHeader className="pb-3"><CardTitle className="text-base sm:text-lg">Pending Memberships ({pendingMemberships?.length || 0})</CardTitle><CardDescription className="text-xs">Staff requests — shows member + plan + payment. Approve to activate.</CardDescription></CardHeader>
+        <CardContent className="space-y-4">
+          {(pendingMemberships as any[])?.length ? (
+            (pendingMemberships as any[]).map((m) => {
+              const linkedPay = (pendingPayments as any[])?.find((p: any) => p.membership_id === m.id);
+              return (
+                <div key={m.id} className="rounded-lg border p-3 sm:p-4 space-y-3 bg-card">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                    <div>
+                      <div className="font-semibold text-sm sm:text-base">{m.members?.first_name} {m.members?.last_name} <Badge variant="outline" className="ml-1 text-[10px]">{m.members?.gender || ""}</Badge></div>
+                      <div className="text-xs text-muted-foreground space-y-0.5">
+                        <div>Phone: {m.members?.phone || "-"} • Email: {m.members?.email || "-"}</div>
+                        <div>Address: {m.members?.address || "-"}</div>
+                        <div>DOB: {m.members?.date_of_birth || "-"} • Emergency: {m.members?.emergency_contact_name || "-"} {m.members?.emergency_contact_phone || ""}</div>
+                        {m.members?.medical_notes && <div>Medical: {m.members.medical_notes}</div>}
+                      </div>
                     </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {(!pendingMemberships || pendingMemberships.length === 0) && <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground text-sm">No pending memberships.</TableCell></TableRow>}
-            </TableBody>
-          </Table>
-        </div>
+                    <Badge className="w-fit h-fit">Pending</Badge>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs border-t pt-3">
+                    <div><div className="text-muted-foreground">Plan</div><div className="font-medium text-sm">{m.membership_plans?.name} <Badge variant="outline" className="ml-1 text-[10px]">{m.membership_plans?.category === "personal_training" ? "PT" : "Gym"}</Badge></div><div className="text-muted-foreground">{m.membership_plans?.description || ""} • {m.membership_plans?.duration_days} days</div></div>
+                    <div><div className="text-muted-foreground">Period & Amount</div><div className="font-medium">{m.start_date} → {m.end_date}</div><div className="text-sm font-semibold">{formatCurrency(Number(m.price_paid || m.membership_plans?.price || 0))}</div><div className="text-muted-foreground">Created {formatDate(m.created_at)}</div></div>
+                    <div><div className="text-muted-foreground">Payment (linked)</div>{linkedPay ? <><div className="font-medium">{formatCurrency(Number(linkedPay.amount))} • {linkedPay.payment_method.toUpperCase()}</div><div className="text-xs">{formatDate(linkedPay.payment_date)} • {linkedPay.notes || "no notes"}</div><div className="text-xs text-muted-foreground">Receipt: {linkedPay.id.slice(0,8)}</div></> : <div className="text-muted-foreground">No linked payment (staff may have not recorded)</div>}</div>
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <form action={approveMembership.bind(null, m.id)} className="flex-1 sm:flex-none"><Button size="sm" className="w-full sm:w-auto h-9">Approve & Activate</Button></form>
+                    <form action={rejectMembership.bind(null, m.id)} className="flex-1 sm:flex-none"><Button size="sm" variant="destructive" className="w-full sm:w-auto h-9">Reject</Button></form>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <p className="text-center py-6 text-sm text-muted-foreground">No pending memberships.</p>
+          )}
+        </CardContent>
       </Card>
 
       <Card className="overflow-hidden">
