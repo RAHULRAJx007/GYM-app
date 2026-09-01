@@ -35,7 +35,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const role = useRole();
-  const filteredNav = nav.filter((item) => !(item as any).adminOnly || role === "admin" || role === null);
+  const filteredNav = nav.filter((item) => !(item as any).adminOnly || role === "admin");
 
   async function logout() {
     const supabase = createClient();
@@ -78,7 +78,7 @@ export function Sidebar() {
 export function MobileNav() {
   const pathname = usePathname();
   const role = useRole();
-  const filteredNav = nav.filter((item) => !(item as any).adminOnly || role === "admin" || role === null);
+  const filteredNav = nav.filter((item) => !(item as any).adminOnly || role === "admin");
   return (
     <nav className="md:hidden flex gap-1.5 p-2 border-b overflow-x-auto scrollbar-none sticky top-0 bg-background z-10">
       {filteredNav.map((item) => {
@@ -103,7 +103,7 @@ export function MobileNav() {
 export function MobileBottomNav() {
   const pathname = usePathname();
   const role = useRole();
-  const filtered = nav.filter((item) => !(item as any).adminOnly || role === "admin" || role === null);
+  const filtered = nav.filter((item) => !(item as any).adminOnly || role === "admin");
   // show only 5 primary items on bottom for thumb reach
   const bottomNav = filtered.slice(0, 5);
   return (
