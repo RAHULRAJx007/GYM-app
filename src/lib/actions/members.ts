@@ -119,6 +119,19 @@ export async function createMember(formData: FormData) {
 
 export async function updateMember(id: string, formData: FormData) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  let role = "admin";
+  if (user) {
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    if (profile?.role) role = profile.role;
+  }
+  // Staff can only edit while membership is pending approval
+  if (role === "staff") {
+    const { data: pending } = await supabase.from("member_memberships").select("id").eq("member_id", id).eq("status", "pending").limit(1);
+    if (!pending || pending.length === 0) {
+      throw new Error("Editing locked after admin approval. Only admin can edit now.");
+    }
+  }
   const payload: Record<string, unknown> = {
     first_name: String(formData.get("first_name") || ""),
     last_name: String(formData.get("last_name") || ""),

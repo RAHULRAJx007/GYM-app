@@ -4,6 +4,8 @@ import { formatCurrency } from "@/lib/utils";
 import { Users, AlertTriangle, Wallet, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { WhatsAppButton } from "@/components/whatsapp-button";
+import { dueMessage } from "@/lib/whatsapp-link";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -11,12 +13,15 @@ export default async function DashboardPage() {
   const { data: profile } = user ? await supabase.from("profiles").select("role").eq("id", user.id).single() : { data: null } as any;
   const isAdmin = profile?.role === "admin";
 
-  const [{ count: totalMembers }, { count: activeMembers }, { data: plans }, { data: payments }, { data: expiring }] = await Promise.all([
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const in7Str = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+  const [{ count: totalMembers }, { count: activeMembers }, { data: plans }, { data: payments }, { data: expiring }, { data: ended }] = await Promise.all([
     supabase.from("members").select("*", { count: "exact", head: true }),
     supabase.from("members").select("*", { count: "exact", head: true }).eq("status", "active"),
     supabase.from("membership_plans").select("*").eq("is_active", true),
     !isAdmin ? Promise.resolve({ data: [] } as any) : supabase.from("payments").select("amount,payment_date").gte("payment_date", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10)),
-    supabase.from("member_memberships").select("id,end_date, member_id, members(first_name,last_name)").eq("status", "active").lte("end_date", new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10)).limit(5),
+    supabase.from("member_memberships").select("id,end_date, member_id, members(first_name,last_name,phone),membership_plans(name)").eq("status", "active").gte("end_date", todayStr).lte("end_date", in7Str).order("end_date", { ascending: true }).limit(5),
+    supabase.from("member_memberships").select("id,end_date, member_id, members(first_name,last_name,phone),membership_plans(name)").eq("status", "active").lt("end_date", todayStr).order("end_date", { ascending: false }).limit(5),
   ]);
 
   const monthRevenue = (payments ?? []).reduce((s: number, p: any) => s + Number(p.amount), 0);
@@ -41,36 +46,66 @@ export default async function DashboardPage() {
 
       <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle>Expiring Soon</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Due in 7 days</CardTitle></CardHeader>
           <CardContent>
             {expiring && expiring.length > 0 ? (
-              <ul className="space-y-2 text-sm">
-                {(expiring as any[]).map((e) => (
-                  <li key={e.id} className="flex justify-between border-b pb-2">
-                    <span>{e.members?.first_name} {e.members?.last_name}</span>
-                    <span className="text-muted-foreground">{e.end_date}</span>
-                  </li>
-                ))}
+              <ul className="space-y-3 text-sm">
+                {(expiring as any[]).map((e) => {
+                  const daysLeft = Math.ceil((new Date(e.end_date).getTime() - new Date().setHours(0,0,0,0)) / 86400000);
+                  return (
+                    <li key={e.id} className="flex flex-col gap-1.5 border-b pb-2.5">
+                      <div className="flex justify-between">
+                        <span className="font-medium">{e.members?.first_name} {e.members?.last_name}</span>
+                        <span className="text-muted-foreground text-xs">{e.end_date} • {daysLeft}d left</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">{(e as any).membership_plans?.name || "Membership"}</div>
+                      {isAdmin && (e as any).members?.phone && (
+                        <WhatsAppButton phone={(e as any).members.phone} message={dueMessage(`${(e as any).members.first_name} ${(e as any).members.last_name}`, (e as any).membership_plans?.name || "Membership", e.end_date, daysLeft)} label="WhatsApp reminder" />
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
-            ) : <p className="text-sm text-muted-foreground">No memberships expiring in 7 days.</p>}
+            ) : <p className="text-sm text-muted-foreground">No memberships due in 7 days.</p>}
           </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle>Recent Members</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Membership Ended</CardTitle></CardHeader>
           <CardContent>
-            {recentMembers && recentMembers.length > 0 ? (
-              <ul className="space-y-2 text-sm">
-                {recentMembers.map((m) => (
-                  <li key={m.id} className="flex justify-between border-b pb-2">
-                    <span>{m.first_name} {m.last_name} <span className="text-muted-foreground">({m.phone || "no phone"})</span></span>
-                    <span className="text-xs bg-muted px-2 py-0.5 rounded">{m.status}</span>
+            {ended && ended.length > 0 ? (
+              <ul className="space-y-3 text-sm">
+                {(ended as any[]).map((e) => (
+                  <li key={e.id} className="flex flex-col gap-1.5 border-b pb-2.5">
+                    <div className="flex justify-between">
+                      <span className="font-medium">{e.members?.first_name} {e.members?.last_name}</span>
+                      <span className="text-destructive text-xs">Ended {e.end_date}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">{(e as any).membership_plans?.name || "Membership"}</div>
+                    {isAdmin && (e as any).members?.phone && (
+                      <WhatsAppButton phone={(e as any).members.phone} message={dueMessage(`${(e as any).members.first_name} ${(e as any).members.last_name}`, (e as any).membership_plans?.name || "Membership", e.end_date, -1)} label="WhatsApp – renewal" />
+                    )}
                   </li>
                 ))}
               </ul>
-            ) : <p className="text-sm text-muted-foreground">No members yet. Add your first member.</p>}
+            ) : <p className="text-sm text-muted-foreground">No ended memberships.</p>}
           </CardContent>
         </Card>
       </div>
+      <Card>
+        <CardHeader><CardTitle>Recent Members</CardTitle></CardHeader>
+        <CardContent>
+          {recentMembers && recentMembers.length > 0 ? (
+            <ul className="space-y-2 text-sm">
+              {recentMembers.map((m) => (
+                <li key={m.id} className="flex justify-between border-b pb-2">
+                  <span>{m.first_name} {m.last_name} <span className="text-muted-foreground">({m.phone || "no phone"})</span></span>
+                  <span className="text-xs bg-muted px-2 py-0.5 rounded">{m.status}</span>
+                </li>
+              ))}
+            </ul>
+          ) : <p className="text-sm text-muted-foreground">No members yet. Add your first member.</p>}
+        </CardContent>
+      </Card>
     </div>
   );
 }
