@@ -64,8 +64,8 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
               <form action={assignMembership.bind(null, id)} className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <select name="plan_id" required className="border rounded-md px-3 py-2 text-sm h-11 bg-transparent"><option value="">Select Plan</option>{plans?.map((p) => <option key={p.id} value={p.id}>{p.name} — {formatCurrency(Number(p.price))} / {p.duration_days}d</option>)}</select>
                 <Input name="price_paid" type="number" placeholder="Price paid (optional)" className="h-11" />
-                <Input name="start_date" type="date" required defaultValue={new Date().toISOString().slice(0,10)} className="h-11" />
-                <Input name="end_date" type="date" required className="h-11" />
+                <Input name="start_date" type="date" required lang="en-GB" defaultValue={new Date().toISOString().slice(0,10)} className="h-11" />
+                <Input name="end_date" type="date" required lang="en-GB" className="h-11" />
                 <Button type="submit" className="col-span-1 sm:col-span-2 h-11">Assign Plan</Button>
               </form>
             </CardContent>
@@ -77,7 +77,7 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
               <form action={recordPayment.bind(null, id)} className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Input name="amount" type="number" step="0.01" placeholder="Amount *" required className="h-11" />
                 <select name="payment_method" className="border rounded-md px-3 text-sm h-11 bg-transparent"><option value="cash">Cash</option><option value="card">Card</option><option value="upi">UPI</option><option value="bank_transfer">Bank Transfer</option><option value="other">Other</option></select>
-                <Input name="payment_date" type="date" defaultValue={new Date().toISOString().slice(0,10)} className="h-11" />
+                <Input name="payment_date" type="date" lang="en-GB" defaultValue={new Date().toISOString().slice(0,10)} className="h-11" />
                 <select name="membership_id" className="border rounded-md px-3 text-sm h-11 bg-transparent"><option value="">Link to membership (optional)</option>{memberships?.map((m) => <option key={m.id} value={m.id}>{m.start_date} → {m.end_date}</option>)}</select>
                 <Input name="notes" placeholder="Notes" className="col-span-1 sm:col-span-2 h-11" />
                 <Button type="submit" className="col-span-1 sm:col-span-2 h-11">Record Payment</Button>

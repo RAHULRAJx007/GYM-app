@@ -45,7 +45,7 @@ export default async function NewMemberPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2"><Label>Gender</Label><select name="gender" className="flex h-11 w-full rounded-md border bg-transparent px-3 text-sm"><option value="">Select</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></div>
-              <div className="space-y-2"><Label>DOB</Label><Input name="date_of_birth" type="date" className="h-11" /></div>
+              <div className="space-y-2"><Label>DOB <span className="text-xs text-muted-foreground">(DD/MM/YYYY)</span></Label><Input name="date_of_birth" type="date" lang="en-GB" className="h-11" /></div>
             </div>
             <div className="space-y-2"><Label>Address</Label><Input name="address" className="h-11" placeholder="Street, area" /></div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -78,7 +78,7 @@ export default async function NewMemberPage() {
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2"><Label>Start Date *</Label><Input name="start_date" type="date" required defaultValue={new Date().toISOString().slice(0,10)} className="h-11" /></div>
+                <div className="space-y-2"><Label>Start Date * <span className="text-xs text-muted-foreground">(DD/MM/YYYY)</span></Label><Input name="start_date" type="date" required lang="en-GB" defaultValue={new Date().toISOString().slice(0,10)} className="h-11" /></div>
                 <div className="space-y-2"><Label>Amount Paid</Label><Input name="price_paid" type="number" step="0.01" placeholder="Auto from plan" className="h-11" /></div>
                 <div className="space-y-2"><Label>Payment Method</Label><select name="payment_method" className="flex h-11 w-full rounded-md border px-3 text-sm"><option value="cash">Cash</option><option value="upi">UPI</option><option value="card">Card</option><option value="bank_transfer">Bank Transfer</option><option value="other">Other</option></select></div>
               </div>

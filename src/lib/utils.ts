@@ -14,9 +14,9 @@ export function formatCurrency(amount: number, currency = "INR") {
 }
 
 export function formatDate(date: string | Date) {
-  return new Date(date).toLocaleDateString("en-IN", {
+  return new Date(date).toLocaleDateString("en-GB", {
     year: "numeric",
-    month: "short",
-    day: "numeric",
+    month: "2-digit",
+    day: "2-digit",
   });
 }
