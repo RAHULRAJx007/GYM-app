@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
-import { LayoutDashboard, Users, Package, CreditCard, Settings, LogOut, Dumbbell, CheckSquare } from "lucide-react";
+import { LayoutDashboard, Users, Package, CreditCard, Settings, LogOut, Dumbbell, CheckSquare, BarChart3 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const nav = [
@@ -12,6 +12,7 @@ const nav = [
   { href: "/dashboard/members", label: "Members", icon: Users },
   { href: "/dashboard/plans", label: "Plans", icon: Package },
   { href: "/dashboard/payments", label: "Payments", icon: CreditCard },
+  { href: "/dashboard/revenue", label: "Revenue", icon: BarChart3, adminOnly: true },
   { href: "/dashboard/approvals", label: "Approvals", icon: CheckSquare, adminOnly: true },
   { href: "/dashboard/staff", label: "Staff", icon: Users, adminOnly: true },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
