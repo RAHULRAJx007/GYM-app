@@ -1,39 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
-
-async function approve(id: string) {
-  "use server";
-  const { createClient: sc } = await import("@/lib/supabase/server");
-  const supabase = await sc();
-  const { data: { user } } = await supabase.auth.getUser();
-  let { error } = await supabase.from("member_memberships").update({ status: "active", approved_by: user?.id, approved_at: new Date().toISOString() } as any).eq("id", id);
-  if (error && (error.code === "PGRST204" || String(error.message).includes("approved_by"))) {
-    const retry = await supabase.from("member_memberships").update({ status: "active" } as any).eq("id", id);
-    error = retry.error as any;
-  }
-  if (error) throw new Error(error.message);
-  // also approve linked pending payment
-  const { data: pays } = await supabase.from("payments").select("id").eq("membership_id", id).eq("status", "pending");
-  for (const p of (pays as any[]) || []) {
-    await supabase.from("payments").update({ status: "completed" } as any).eq("id", p.id);
-  }
-  revalidatePath("/dashboard/approvals");
-  redirect("/dashboard/approvals");
-}
-async function reject(id: string) {
-  "use server";
-  const { createClient: sc } = await import("@/lib/supabase/server");
-  const supabase = await sc();
-  await supabase.from("member_memberships").update({ status: "rejected" } as any).eq("id", id);
-  revalidatePath("/dashboard/approvals");
-  redirect("/dashboard/approvals");
-}
+import { approveMembership, rejectMembership } from "@/lib/actions/approvals";
 
 export default async function ApprovalDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -107,8 +79,8 @@ export default async function ApprovalDetailPage({ params }: { params: Promise<{
       </Card>
 
       <div className="flex gap-3">
-        <form action={approve.bind(null, m.id)} className="flex-1"><Button className="w-full h-11 text-base">Approve & Activate</Button></form>
-        <form action={reject.bind(null, m.id)} className="flex-1"><Button variant="destructive" className="w-full h-11 text-base">Reject</Button></form>
+        <form action={approveMembership} className="flex-1"><input type="hidden" name="id" value={m.id} /><Button className="w-full h-11 text-base">Approve & Activate</Button></form>
+        <form action={rejectMembership} className="flex-1"><input type="hidden" name="id" value={m.id} /><Button variant="destructive" className="w-full h-11 text-base">Reject</Button></form>
       </div>
     </div>
   );

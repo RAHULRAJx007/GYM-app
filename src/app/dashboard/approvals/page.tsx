@@ -1,110 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
-import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/lib/utils";
-
-async function approveMembership(id: string) {
-  "use server";
-  const { createClient: createSupabase } = await import("@/lib/supabase/server");
-  const supabase = await createSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
-  console.log("[approveMembership] user", user?.id, "id", id);
-  let { error } = await supabase.from("member_memberships").update({ status: "active", approved_by: user?.id, approved_at: new Date().toISOString() } as any).eq("id", id);
-  if (error && (error.code === "PGRST204" || String(error.message).includes("approved_by"))) {
-    console.log("[approveMembership] retry without approved_by", error.message);
-    const retry = await supabase.from("member_memberships").update({ status: "active" } as any).eq("id", id);
-    error = retry.error as any;
-  }
-  if (error) {
-    console.error("[approveMembership] failed", error);
-    throw new Error(error.message);
-  }
-  console.log("[approveMembership] success");
-  revalidatePath("/dashboard/approvals");
-  revalidatePath("/dashboard");
-}
-async function rejectMembership(id: string) {
-  "use server";
-  const { createClient: createSupabase } = await import("@/lib/supabase/server");
-  const supabase = await createSupabase();
-  await supabase.from("member_memberships").update({ status: "rejected", updated_at: new Date().toISOString() } as any).eq("id", id);
-  // FIFO: keep only 30 rejected, delete oldest when new one comes
-  const { data: rejected } = await supabase.from("member_memberships").select("id,updated_at").eq("status", "rejected").order("updated_at", { ascending: true });
-  if (rejected && rejected.length > 30) {
-    const toDelete = rejected.slice(0, rejected.length - 30).map((r: any) => r.id);
-    for (const delId of toDelete) {
-      const { data: mm } = await supabase.from("member_memberships").select("member_id").eq("id", delId).single();
-      await supabase.from("member_memberships").delete().eq("id", delId);
-      // If this was the only membership for that member and member was created via rejected flow, optionally keep member - we keep member for history
-    }
-  }
-  revalidatePath("/dashboard/approvals");
-}
-async function approvePayment(id: string) {
-  "use server";
-  const { createClient: createSupabase } = await import("@/lib/supabase/server");
-  const supabase = await createSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
-  let { error } = await supabase.from("payments").update({ status: "completed", approved_by: user?.id, approved_at: new Date().toISOString() } as any).eq("id", id);
-  if (error && (error.code === "PGRST204" || String(error.message).includes("approved_by"))) {
-    const retry = await supabase.from("payments").update({ status: "completed" } as any).eq("id", id);
-    error = retry.error as any;
-  }
-  if (error) throw new Error(error.message);
-  const { data: pay2 } = await supabase.from("payments").select("membership_id").eq("id", id).single();
-  if (pay2?.membership_id) {
-    let { error: mmErr } = await supabase.from("member_memberships").update({ status: "active", approved_by: user?.id, approved_at: new Date().toISOString() } as any).eq("id", pay2.membership_id).eq("status", "pending");
-    if (mmErr && (mmErr.code === "PGRST204" || String(mmErr.message).includes("approved_by"))) {
-      const retry = await supabase.from("member_memberships").update({ status: "active" } as any).eq("id", pay2.membership_id).eq("status", "pending");
-      mmErr = retry.error as any;
-    }
-  }
-  revalidatePath("/dashboard/approvals");
-}
-async function rejectPayment(id: string) {
-  "use server";
-  const { createClient: createSupabase } = await import("@/lib/supabase/server");
-  const supabase = await createSupabase();
-  await supabase.from("payments").update({ status: "rejected" } as any).eq("id", id);
-  const { data: rejected } = await supabase.from("payments").select("id").eq("status", "rejected").order("created_at", { ascending: true });
-  if (rejected && rejected.length > 30) {
-    const toDelete = rejected.slice(0, rejected.length - 30).map((r: any) => r.id);
-    for (const delId of toDelete) await supabase.from("payments").delete().eq("id", delId);
-  }
-  revalidatePath("/dashboard/approvals");
-}
-async function reapproveMembership(id: string) {
-  "use server";
-  const { createClient: createSupabase } = await import("@/lib/supabase/server");
-  const supabase = await createSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
-  let { error } = await supabase.from("member_memberships").update({ status: "active", approved_by: user?.id, approved_at: new Date().toISOString() } as any).eq("id", id).eq("status", "rejected");
-  if (error && (error.code === "PGRST204" || String(error.message).includes("approved_by"))) {
-    const retry = await supabase.from("member_memberships").update({ status: "active" } as any).eq("id", id).eq("status", "rejected");
-    error = retry.error as any;
-  }
-  if (error) throw new Error(error.message);
-  // also re-approve linked payment if still rejected
-  await supabase.from("payments").update({ status: "completed" } as any).eq("membership_id", id).eq("status", "rejected");
-  revalidatePath("/dashboard/approvals");
-}
-async function reapprovePayment(id: string) {
-  "use server";
-  const { createClient: createSupabase } = await import("@/lib/supabase/server");
-  const supabase = await createSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
-  let { error } = await supabase.from("payments").update({ status: "completed", approved_by: user?.id, approved_at: new Date().toISOString() } as any).eq("id", id).eq("status", "rejected");
-  if (error && (error.code === "PGRST204" || String(error.message).includes("approved_by"))) {
-    const retry = await supabase.from("payments").update({ status: "completed" } as any).eq("id", id).eq("status", "rejected");
-    error = retry.error as any;
-  }
-  if (error) throw new Error(error.message);
-  revalidatePath("/dashboard/approvals");
-}
+import { approveMembership, rejectMembership, approvePayment, rejectPayment, reapproveMembership, reapprovePayment } from "@/lib/actions/approvals";
 
 export default async function ApprovalsPage() {
   const supabase = await createClient();
@@ -163,8 +64,8 @@ export default async function ApprovalsPage() {
                     </div>
                   </Link>
                   <div className="flex gap-2 pt-2 border-t">
-                    <form action={approveMembership.bind(null, m.id)} className="flex-1 sm:flex-none"><Button size="sm" className="w-full sm:w-auto h-8">Approve</Button></form>
-                    <form action={rejectMembership.bind(null, m.id)} className="flex-1 sm:flex-none"><Button size="sm" variant="destructive" className="w-full sm:w-auto h-8">Reject</Button></form>
+                    <form action={approveMembership} className="flex-1 sm:flex-none"><input type="hidden" name="id" value={m.id} /><Button size="sm" className="w-full sm:w-auto h-8">Approve</Button></form>
+                    <form action={rejectMembership} className="flex-1 sm:flex-none"><input type="hidden" name="id" value={m.id} /><Button size="sm" variant="destructive" className="w-full sm:w-auto h-8">Reject</Button></form>
                   </div>
                 </div>
               );
@@ -189,8 +90,8 @@ export default async function ApprovalsPage() {
                   <TableCell className="hidden md:table-cell text-xs">{formatDate(p.payment_date)}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <form action={approvePayment.bind(null, p.id)}><Button size="sm" className="h-8">Approve</Button></form>
-                      <form action={rejectPayment.bind(null, p.id)}><Button size="sm" variant="destructive" className="h-8">Reject</Button></form>
+                      <form action={approvePayment}><input type="hidden" name="id" value={p.id} /><Button size="sm" className="h-8">Approve</Button></form>
+                      <form action={rejectPayment}><input type="hidden" name="id" value={p.id} /><Button size="sm" variant="destructive" className="h-8">Reject</Button></form>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -214,7 +115,7 @@ export default async function ApprovalsPage() {
                     <div className="font-medium text-sm">{m.members?.first_name} {m.members?.last_name} <span className="text-xs text-muted-foreground">• {m.members?.phone || ""}</span> <Badge variant="outline" className="ml-1 text-[10px] bg-white">{m.membership_plans?.name}</Badge></div>
                     <div className="text-xs text-muted-foreground">{m.start_date} → {m.end_date} • {formatCurrency(Number(m.price_paid || m.membership_plans?.price || 0))} • Rejected {m.updated_at ? formatDate(m.updated_at) : formatDate(m.created_at)}</div>
                   </div>
-                  <form action={reapproveMembership.bind(null, m.id)}><Button size="sm" className="w-full sm:w-auto">Approve again</Button></form>
+                  <form action={reapproveMembership}><input type="hidden" name="id" value={m.id} /><Button size="sm" className="w-full sm:w-auto">Approve again</Button></form>
                 </div>
               ))}
               {(rejectedPayments as any[])?.map((p) => (
@@ -223,7 +124,7 @@ export default async function ApprovalsPage() {
                     <div className="font-medium text-sm">{p.members?.first_name} {p.members?.last_name} <span className="text-xs text-muted-foreground">• {p.members?.phone || ""}</span></div>
                     <div className="text-xs text-muted-foreground">{formatCurrency(Number(p.amount))} • {p.payment_method} • {formatDate(p.payment_date)} • Rejected</div>
                   </div>
-                  <form action={reapprovePayment.bind(null, p.id)}><Button size="sm" className="w-full sm:w-auto">Approve again</Button></form>
+                  <form action={reapprovePayment}><input type="hidden" name="id" value={p.id} /><Button size="sm" className="w-full sm:w-auto">Approve again</Button></form>
                 </div>
               ))}
             </>
