@@ -79,8 +79,8 @@ export default async function ApprovalDetailPage({ params }: { params: Promise<{
       </Card>
 
       <div className="flex gap-3">
-        <form action={approveMembership} className="flex-1"><input type="hidden" name="id" value={m.id} /><Button className="w-full h-11 text-base">Approve & Activate</Button></form>
-        <form action={rejectMembership} className="flex-1"><input type="hidden" name="id" value={m.id} /><Button variant="destructive" className="w-full h-11 text-base">Reject</Button></form>
+        <form action={approveMembership} className="flex-1"><input type="hidden" name="id" value={m.id} /><Button type="submit" className="w-full h-11 text-base">Approve & Activate</Button></form>
+        <form action={rejectMembership} className="flex-1"><input type="hidden" name="id" value={m.id} /><Button type="submit" variant="destructive" className="w-full h-11 text-base">Reject</Button></form>
       </div>
     </div>
   );

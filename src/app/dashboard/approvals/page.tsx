@@ -64,8 +64,8 @@ export default async function ApprovalsPage() {
                     </div>
                   </Link>
                   <div className="flex gap-2 pt-2 border-t">
-                    <form action={approveMembership} className="flex-1 sm:flex-none"><input type="hidden" name="id" value={m.id} /><Button size="sm" className="w-full sm:w-auto h-8">Approve</Button></form>
-                    <form action={rejectMembership} className="flex-1 sm:flex-none"><input type="hidden" name="id" value={m.id} /><Button size="sm" variant="destructive" className="w-full sm:w-auto h-8">Reject</Button></form>
+                    <form action={approveMembership} className="flex-1 sm:flex-none"><input type="hidden" name="id" value={m.id} /><Button type="submit" size="sm" className="w-full sm:w-auto h-8">Approve</Button></form>
+                    <form action={rejectMembership} className="flex-1 sm:flex-none"><input type="hidden" name="id" value={m.id} /><Button type="submit" size="sm" variant="destructive" className="w-full sm:w-auto h-8">Reject</Button></form>
                   </div>
                 </div>
               );
@@ -90,8 +90,8 @@ export default async function ApprovalsPage() {
                   <TableCell className="hidden md:table-cell text-xs">{formatDate(p.payment_date)}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <form action={approvePayment}><input type="hidden" name="id" value={p.id} /><Button size="sm" className="h-8">Approve</Button></form>
-                      <form action={rejectPayment}><input type="hidden" name="id" value={p.id} /><Button size="sm" variant="destructive" className="h-8">Reject</Button></form>
+                      <form action={approvePayment}><input type="hidden" name="id" value={p.id} /><Button type="submit" size="sm" className="h-8">Approve</Button></form>
+                      <form action={rejectPayment}><input type="hidden" name="id" value={p.id} /><Button type="submit" size="sm" variant="destructive" className="h-8">Reject</Button></form>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -115,7 +115,7 @@ export default async function ApprovalsPage() {
                     <div className="font-medium text-sm">{m.members?.first_name} {m.members?.last_name} <span className="text-xs text-muted-foreground">• {m.members?.phone || ""}</span> <Badge variant="outline" className="ml-1 text-[10px] bg-white">{m.membership_plans?.name}</Badge></div>
                     <div className="text-xs text-muted-foreground">{m.start_date} → {m.end_date} • {formatCurrency(Number(m.price_paid || m.membership_plans?.price || 0))} • Rejected {m.updated_at ? formatDate(m.updated_at) : formatDate(m.created_at)}</div>
                   </div>
-                  <form action={reapproveMembership}><input type="hidden" name="id" value={m.id} /><Button size="sm" className="w-full sm:w-auto">Approve again</Button></form>
+                  <form action={reapproveMembership}><input type="hidden" name="id" value={m.id} /><Button type="submit" size="sm" className="w-full sm:w-auto">Approve again</Button></form>
                 </div>
               ))}
               {(rejectedPayments as any[])?.map((p) => (
@@ -124,7 +124,7 @@ export default async function ApprovalsPage() {
                     <div className="font-medium text-sm">{p.members?.first_name} {p.members?.last_name} <span className="text-xs text-muted-foreground">• {p.members?.phone || ""}</span></div>
                     <div className="text-xs text-muted-foreground">{formatCurrency(Number(p.amount))} • {p.payment_method} • {formatDate(p.payment_date)} • Rejected</div>
                   </div>
-                  <form action={reapprovePayment}><input type="hidden" name="id" value={p.id} /><Button size="sm" className="w-full sm:w-auto">Approve again</Button></form>
+                  <form action={reapprovePayment}><input type="hidden" name="id" value={p.id} /><Button type="submit" size="sm" className="w-full sm:w-auto">Approve again</Button></form>
                 </div>
               ))}
             </>
