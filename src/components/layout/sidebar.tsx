@@ -102,8 +102,10 @@ export function MobileNav() {
 
 export function MobileBottomNav() {
   const pathname = usePathname();
+  const role = useRole();
+  const filtered = nav.filter((item) => !(item as any).adminOnly || role === "admin" || role === null);
   // show only 5 primary items on bottom for thumb reach
-  const bottomNav = nav.slice(0, 5);
+  const bottomNav = filtered.slice(0, 5);
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t flex justify-around items-center py-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] z-20">
       {bottomNav.map((item) => {
