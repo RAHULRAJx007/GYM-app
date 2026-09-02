@@ -38,12 +38,12 @@ export default async function ApprovalsPage() {
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">Admin queue</p>
           <h1 className="text-2xl font-bold tracking-tight">Approvals</h1>
         </div>
-        <Badge variant="outline" className="w-fit rounded-full border-slate-200 bg-white/80 px-3 py-1 text-sm font-medium">
+        <Badge variant="outline" className="w-fit rounded-full border-border bg-card px-3 py-1 text-sm font-medium">
           {(pendingMemberships?.length || 0) + (pendingPayments?.length || 0)} pending
         </Badge>
       </div>
 
-      <Card className="overflow-hidden rounded-2xl border-0 bg-white/80 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
+      <Card className="overflow-hidden rounded-2xl border-0 bg-card shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Pending Memberships ({pendingMemberships?.length || 0})</CardTitle>
           <CardDescription className="text-xs">Staff requests — view full details and approve in one tap.</CardDescription>
@@ -53,7 +53,7 @@ export default async function ApprovalsPage() {
             (pendingMemberships as any[]).map((m) => {
               const linkedPay = (pendingPaymentsRaw as any[])?.find((p: any) => p.membership_id === m.id);
               return (
-                <div key={m.id} className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3 sm:p-4">
+                <div key={m.id} className="space-y-3 rounded-2xl border border-border bg-muted p-3 sm:p-4">
                   <Link href={`/dashboard/approvals/${m.id}`} className="block space-y-3 hover:opacity-90">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <div>
@@ -69,10 +69,10 @@ export default async function ApprovalsPage() {
                       <Badge className="w-fit rounded-full bg-amber-100 text-amber-800 border-amber-200">Pending</Badge>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3 border-t border-slate-200 pt-3 text-xs sm:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-3 border-t border-border pt-3 text-xs sm:grid-cols-3">
                       <div>
                         <div className="text-muted-foreground">Plan</div>
-                        <div className="mt-1 flex items-center gap-1.5 font-medium text-sm text-slate-900">
+                        <div className="mt-1 flex items-center gap-1.5 font-medium text-sm text-card-foreground">
                           {m.membership_plans?.name}
                           <Badge variant="outline" className="text-[10px]">{m.membership_plans?.category === "personal_training" ? "PT" : "Gym"}</Badge>
                         </div>
@@ -80,14 +80,14 @@ export default async function ApprovalsPage() {
                       </div>
                       <div>
                         <div className="text-muted-foreground">Period</div>
-                        <div className="mt-1 font-medium text-sm text-slate-900">{m.start_date} → {m.end_date}</div>
-                        <div className="font-semibold text-slate-900">{formatCurrency(Number(m.price_paid || m.membership_plans?.price || 0))}</div>
+                        <div className="mt-1 font-medium text-sm text-card-foreground">{m.start_date} → {m.end_date}</div>
+                        <div className="font-semibold text-card-foreground">{formatCurrency(Number(m.price_paid || m.membership_plans?.price || 0))}</div>
                       </div>
                       <div>
                         <div className="text-muted-foreground">Payment</div>
                         {linkedPay ? (
                           <>
-                            <div className="mt-1 font-medium text-sm text-slate-900">{formatCurrency(Number(linkedPay.amount))} • {linkedPay.payment_method.toUpperCase()}</div>
+                            <div className="mt-1 font-medium text-sm text-card-foreground">{formatCurrency(Number(linkedPay.amount))} • {linkedPay.payment_method.toUpperCase()}</div>
                             <div className="text-xs text-muted-foreground">{formatDate(linkedPay.payment_date)}</div>
                           </>
                         ) : <div className="mt-1 text-xs text-muted-foreground">No linked payment</div>}
@@ -95,7 +95,7 @@ export default async function ApprovalsPage() {
                     </div>
                   </Link>
 
-                  <div className="flex gap-2 border-t border-slate-200 pt-2">
+                  <div className="flex gap-2 border-t border-border pt-2">
                     <form action={approveMembership} className="flex-1 sm:flex-none"><input type="hidden" name="id" value={m.id} /><Button type="submit" size="sm" className="w-full sm:w-auto">Approve</Button></form>
                     <form action={rejectMembership} className="flex-1 sm:flex-none"><input type="hidden" name="id" value={m.id} /><Button type="submit" size="sm" variant="destructive" className="w-full sm:w-auto">Reject</Button></form>
                   </div>
@@ -108,7 +108,7 @@ export default async function ApprovalsPage() {
         </CardContent>
       </Card>
 
-      <Card className="overflow-hidden rounded-2xl border-0 bg-white/80 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
+      <Card className="overflow-hidden rounded-2xl border-0 bg-card shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Pending Standalone Payments ({pendingPayments?.length || 0})</CardTitle>
           <CardDescription className="text-xs">Payments not linked to a pending membership.</CardDescription>
@@ -147,7 +147,7 @@ export default async function ApprovalsPage() {
 
       <Card className="overflow-hidden rounded-2xl border border-amber-200 bg-amber-50/40 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">Rejected <Badge variant="outline" className="rounded-full border-amber-200 bg-white/90 text-amber-800">{(rejectedMemberships?.length || 0) + (rejectedPayments?.length || 0)} / 30</Badge></CardTitle>
+          <CardTitle className="flex items-center gap-2 text-lg">Rejected <Badge variant="outline" className="rounded-full border-amber-200 bg-card/90 text-amber-800">{(rejectedMemberships?.length || 0) + (rejectedPayments?.length || 0)} / 30</Badge></CardTitle>
           <CardDescription className="text-xs">Accidentally rejected? Approve again.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -156,18 +156,18 @@ export default async function ApprovalsPage() {
           ) : (
             <>
               {(rejectedMemberships as any[])?.map((m) => (
-                <div key={`rm-${m.id}`} className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-white/80 p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div key={`rm-${m.id}`} className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
-                    <div className="text-sm font-semibold text-slate-900">{m.members?.first_name} {m.members?.last_name} <span className="text-xs font-normal text-muted-foreground">• {m.members?.phone || ""}</span> <Badge variant="outline" className="ml-1 text-[10px] bg-white">{m.membership_plans?.name}</Badge></div>
+                    <div className="text-sm font-semibold text-card-foreground">{m.members?.first_name} {m.members?.last_name} <span className="text-xs font-normal text-muted-foreground">• {m.members?.phone || ""}</span> <Badge variant="outline" className="ml-1 text-[10px] bg-card">{m.membership_plans?.name}</Badge></div>
                     <div className="mt-1 text-xs text-muted-foreground">{m.start_date} → {m.end_date} • {formatCurrency(Number(m.price_paid || m.membership_plans?.price || 0))} • Rejected {m.updated_at ? formatDate(m.updated_at) : formatDate(m.created_at)}</div>
                   </div>
                   <form action={reapproveMembership}><input type="hidden" name="id" value={m.id} /><Button type="submit" size="sm" className="w-full sm:w-auto">Approve again</Button></form>
                 </div>
               ))}
               {(rejectedPayments as any[])?.map((p) => (
-                <div key={`rp-${p.id}`} className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-white/80 p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div key={`rp-${p.id}`} className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
-                    <div className="text-sm font-semibold text-slate-900">{p.members?.first_name} {p.members?.last_name} <span className="text-xs font-normal text-muted-foreground">• {p.members?.phone || ""}</span></div>
+                    <div className="text-sm font-semibold text-card-foreground">{p.members?.first_name} {p.members?.last_name} <span className="text-xs font-normal text-muted-foreground">• {p.members?.phone || ""}</span></div>
                     <div className="mt-1 text-xs text-muted-foreground">{formatCurrency(Number(p.amount))} • {p.payment_method} • {formatDate(p.payment_date)} • Rejected</div>
                   </div>
                   <form action={reapprovePayment}><input type="hidden" name="id" value={p.id} /><Button type="submit" size="sm" className="w-full sm:w-auto">Approve again</Button></form>
@@ -180,3 +180,5 @@ export default async function ApprovalsPage() {
     </div>
   );
 }
+
+

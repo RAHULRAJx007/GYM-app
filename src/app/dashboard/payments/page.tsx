@@ -21,12 +21,12 @@ export default async function PaymentsPage() {
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">Transactions</p>
           <h1 className="text-2xl font-bold tracking-tight">Payments</h1>
         </div>
-        <div className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-sm font-medium text-slate-700">
+        <div className="rounded-full border border-border bg-card px-3 py-1 text-sm font-medium text-muted-foreground">
           {payments?.length || 0} payments
         </div>
       </div>
 
-      <Card className="overflow-hidden rounded-2xl border-0 bg-white/80 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
+      <Card className="overflow-hidden rounded-2xl border-0 bg-card shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Total (last 100): {formatCurrency(total)}</CardTitle>
         </CardHeader>
@@ -62,3 +62,6 @@ export default async function PaymentsPage() {
     </div>
   );
 }
+
+
+

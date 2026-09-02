@@ -58,11 +58,11 @@ export default async function StaffPage() {
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">People</p>
           <h1 className="text-2xl font-bold tracking-tight">Staff</h1>
         </div>
-        <Badge variant="outline" className="w-fit rounded-full border-slate-200 bg-white/80 px-3 py-1 text-sm font-medium">You: {myProfile?.role}</Badge>
+        <Badge variant="outline" className="w-fit rounded-full border-border bg-card px-3 py-1 text-sm font-medium">You: {myProfile?.role}</Badge>
       </div>
 
       {isAdmin ? (
-        <Card className="rounded-2xl border-0 bg-white/80 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
+        <Card className="rounded-2xl border-0 bg-card shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Add Staff</CardTitle>
             <CardDescription className="text-xs">Staff can add members and record payments.</CardDescription>
@@ -79,12 +79,12 @@ export default async function StaffPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card className="rounded-2xl border-0 bg-white/80 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
+        <Card className="rounded-2xl border-0 bg-card shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
           <CardContent className="pt-6 text-sm text-muted-foreground">Only admin can manage staff. You are staff — use Members to add members and Payments to record collections (they will go to Approvals).</CardContent>
         </Card>
       )}
 
-      <Card className="overflow-hidden rounded-2xl border-0 bg-white/80 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
+      <Card className="overflow-hidden rounded-2xl border-0 bg-card shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
         <CardHeader className="pb-3"><CardTitle className="text-lg">All Users</CardTitle></CardHeader>
         <div className="overflow-x-auto">
           <Table>
@@ -110,3 +110,5 @@ export default async function StaffPage() {
     </div>
   );
 }
+
+

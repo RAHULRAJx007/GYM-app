@@ -292,14 +292,14 @@ export async function renewMembership(memberId: string, formData: FormData) {
   const selectedPrice = Number(newPlan.price || 0);
   const selectedDuration = Number(newPlan.duration_days || 30);
 
-  const { data: currentMembership } = await supabase
+  const { data: currentMemberships } = await supabase
     .from("member_memberships")
     .select("id,end_date,plan_id,price_paid,membership_plans(price,duration_days)")
     .eq("member_id", memberId)
     .eq("status", "active")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order("end_date", { ascending: false });
+
+  const currentMembership = (currentMemberships as any[])?.[0] as any;
 
   let amount = amountInput > 0 ? amountInput : selectedPrice;
   if (currentMembership?.end_date) {
@@ -352,6 +352,13 @@ export async function renewMembership(memberId: string, formData: FormData) {
     }
   }
   if (payErr) throw new Error(payErr.message);
+  // Expire old active memberships for this member so they don't show as due/ended after renewal
+  if (currentMemberships && (currentMemberships as any[]).length > 0) {
+    for (const old of (currentMemberships as any[])) {
+      if (old.id === membershipId) continue;
+      await supabase.from("member_memberships").update({ status: "expired", updated_at: new Date().toISOString() } as any).eq("id", old.id).eq("status", "active");
+    }
+  }
   revalidatePath(`/dashboard/members/${memberId}`);
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/payments");

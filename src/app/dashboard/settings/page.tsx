@@ -47,10 +47,10 @@ export default async function SettingsPage() {
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">Brand</p>
           <h1 className="text-2xl font-bold tracking-tight">Gym Settings</h1>
         </div>
-        {!isAdmin && <span className="w-fit rounded-full border border-slate-200 bg-white/80 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em] text-slate-500">View only</span>}
+        {!isAdmin && <span className="w-fit rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">View only</span>}
       </div>
 
-      <Card className="rounded-2xl border-0 bg-white/80 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
+      <Card className="rounded-2xl border-0 bg-card shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
         <CardHeader>
           <CardTitle className="text-lg">Gym Info {settings?.updated_at && <span className="text-xs font-normal text-muted-foreground">• Updated {new Date(settings.updated_at).toLocaleDateString("en-GB")}</span>}</CardTitle>
         </CardHeader>
@@ -62,18 +62,21 @@ export default async function SettingsPage() {
               <div className="space-y-2"><Label>Email</Label><Input name="email" defaultValue={settings?.email || ""} className="h-11 rounded-xl" type="email" disabled={!isAdmin} /></div>
             </div>
             <div className="space-y-2"><Label>Address</Label><Input name="address" defaultValue={settings?.address || ""} className="h-11 rounded-xl" disabled={!isAdmin} /></div>
-            <div className="space-y-2"><Label>Currency</Label><select name="currency" defaultValue={settings?.currency || "INR"} disabled={!isAdmin} className="flex h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 disabled:opacity-50"><option value="INR">INR</option><option value="USD">USD</option><option value="EUR">EUR</option></select></div>
+            <div className="space-y-2"><Label>Currency</Label><select name="currency" defaultValue={settings?.currency || "INR"} disabled={!isAdmin} className="flex h-11 w-full rounded-xl border border-border bg-muted px-3 text-sm text-muted-foreground disabled:opacity-50"><option value="INR">INR</option><option value="USD">USD</option><option value="EUR">EUR</option></select></div>
             {isAdmin ? <Button type="submit" className="h-11 w-full rounded-xl sm:w-auto">Save</Button> : <p className="text-xs text-muted-foreground">Only admin can save. Staff view only.</p>}
           </form>
         </CardContent>
       </Card>
 
-      <Card className="rounded-2xl border-0 bg-white/80 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
+      <Card className="rounded-2xl border-0 bg-card shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
         <CardContent className="pt-6 text-sm text-muted-foreground">
-          <p className="font-semibold text-slate-900">Connected to Supabase</p>
+          <p className="font-semibold text-card-foreground">Connected to Supabase</p>
           <p className="mt-1 break-all">Project: https://csqkkfpaqxgnffxywmvi.supabase.co</p>
         </CardContent>
       </Card>
     </div>
   );
 }
+
+
+
