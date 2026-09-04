@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getDashboardContext } from "@/lib/supabase/dashboard-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 import { Users, AlertTriangle, Wallet, UserPlus } from "lucide-react";
@@ -8,18 +8,15 @@ import { WhatsAppButton } from "@/components/whatsapp-button";
 import { dueMessage } from "@/lib/whatsapp-link";
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = user ? await supabase.from("profiles").select("role").eq("id", user.id).single() : { data: null } as any;
-  const isAdmin = profile?.role === "admin";
-  const { data: gym } = await supabase.from("gym_settings").select("name, phone, address, email").order("created_at", { ascending: false }).limit(1).maybeSingle();
+  const { supabase, role, gym } = await getDashboardContext();
+  const isAdmin = role === "admin";
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const in7Str = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
   const [{ count: totalMembers }, { count: activeMembers }, { data: plans }, { data: payments }, { data: expiringRaw }, { data: endedRaw }] = await Promise.all([
-    supabase.from("members").select("*", { count: "exact", head: true }),
-    supabase.from("members").select("*", { count: "exact", head: true }).eq("status", "active"),
-    supabase.from("membership_plans").select("*").eq("is_active", true),
+    supabase.from("members").select("id", { count: "exact", head: true }),
+    supabase.from("members").select("id", { count: "exact", head: true }).eq("status", "active"),
+    supabase.from("membership_plans").select("id").eq("is_active", true),
     !isAdmin ? Promise.resolve({ data: [] } as any) : supabase.from("payments").select("amount,payment_date").gte("payment_date", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10)),
     supabase.from("member_memberships").select("id,end_date, member_id, members(first_name,last_name,phone),membership_plans(name)").eq("status", "active").gte("end_date", todayStr).lte("end_date", in7Str).order("end_date", { ascending: true }).limit(20),
     supabase.from("member_memberships").select("id,end_date, member_id, members(first_name,last_name,phone),membership_plans(name)").eq("status", "active").lt("end_date", todayStr).order("end_date", { ascending: false }).limit(20),

@@ -1,17 +1,11 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getDashboardContext } from "@/lib/supabase/dashboard-context";
 import { Sidebar, MobileHeader } from "@/components/layout/sidebar";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { user, role, gym } = await getDashboardContext();
   if (!user) redirect("/");
 
-  const [{ data: profile }, { data: gym }] = await Promise.all([
-    supabase.from("profiles").select("role").eq("id", user.id).single(),
-    supabase.from("gym_settings").select("name").order("created_at", { ascending: false }).limit(1).maybeSingle(),
-  ]);
-  const role = profile?.role || "staff";
   const gymName = gym?.name || "FORGE Gym";
   const theme = role === "admin" ? "theme-admin" : "theme-staff";
 
