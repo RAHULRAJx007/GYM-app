@@ -54,7 +54,7 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      <div className={!isAdmin ? "grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3" : "grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4"}>
+      <div className={!isAdmin ? "grid grid-cols-1 min-[340px]:grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-3" : "grid grid-cols-1 min-[340px]:grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4"}>
         <Card className="rounded-2xl border-0 bg-card shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Members</CardTitle><Users className="h-4 w-4 text-primary" /></CardHeader>
           <CardContent><div className="text-2xl font-bold">{totalMembers ?? 0}</div><p className="text-xs text-muted-foreground">{activeMembers ?? 0} active</p></CardContent>

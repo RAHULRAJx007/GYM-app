@@ -62,7 +62,7 @@ export function Sidebar({ gymName = "FORGE" }: { gymName?: string }) {
   return (
     <aside
       className={cn(
-        "hidden lg:flex w-[88px] xl:w-[280px] shrink-0 flex-col sticky top-0 h-screen p-3 pr-0",
+        "hidden xl:flex w-[280px] shrink-0 flex-col sticky top-0 h-screen p-3 pr-0",
         isStaff ? "bg-background" : "bg-transparent"
       )}
     >
@@ -145,7 +145,7 @@ export function Sidebar({ gymName = "FORGE" }: { gymName?: string }) {
             onClick={logout}
             className={cn(
               "flex w-full items-center justify-center gap-2 rounded-full h-11 text-sm font-bold transition-colors xl:justify-start xl:px-4",
-              isStaff ? "bg-foreground text-white hover:bg-foreground/90" : "bg-card text-foreground hover:bg-card/90"
+              isStaff ? "bg-foreground text-white hover:bg-foreground/90" : "bg-accent text-accent-foreground hover:bg-accent/90"
             )}
           >
             <LogOut className="h-4 w-4" />
@@ -176,7 +176,7 @@ export function MobileHeader({ gymName = "FORGE" }: { gymName?: string }) {
   const isAdmin = role === "admin";
   return (
     <>
-      <header className={cn("lg:hidden sticky top-0 z-30 border-b backdrop-blur-xl", isAdmin ? "bg-[#111417]/90 border-[#242A2E]" : "bg-card/90 border-border")}>
+      <header className={cn("xl:hidden sticky top-0 z-30 border-b backdrop-blur-xl", isAdmin ? "bg-[#111417]/90 border-[#242A2E]" : "bg-card/90 border-border")}>
         <div className="flex h-[64px] items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <button
@@ -202,7 +202,7 @@ export function MobileHeader({ gymName = "FORGE" }: { gymName?: string }) {
 
       {/* drawer - theme aware */}
       {open && (
-        <div className="lg:hidden fixed inset-0 z-50 flex">
+        <div className="xl:hidden fixed inset-0 z-50 flex">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setOpen(false)} />
           <div className={cn("relative flex w-[88%] max-w-[340px] flex-col rounded-r-[28px] shadow-[20px_0_60px_rgba(0,0,0,0.35)] overflow-hidden animate-in slide-in-from-left", isAdmin ? "bg-[#111417] border-r border-[#242A2E]" : "bg-card")}>
             <div className={cn("flex items-center justify-between border-b p-5", isAdmin ? "bg-[#040608] border-[#242A2E]" : "bg-[#F9F8F4] border-border")}>
@@ -253,7 +253,7 @@ export function MobileHeader({ gymName = "FORGE" }: { gymName?: string }) {
               <div className={cn("rounded-2xl p-3 flex items-center gap-2 text-sm font-bold", isAdmin ? "bg-accent text-accent-foreground" : "bg-accent text-accent-foreground")}>
                 <Sparkles className="h-4 w-4" /> {isAdmin ? "Admin command • All access" : "Thumb-friendly • No reload"}
               </div>
-              <button onClick={logout} className={cn("flex w-full items-center justify-center gap-2 rounded-full h-12 font-bold", isAdmin ? "bg-card text-[#040608]" : "bg-foreground text-white")}>
+              <button onClick={logout} className={cn("flex w-full items-center justify-center gap-2 rounded-full h-12 font-bold", isAdmin ? "bg-accent text-accent-foreground" : "bg-foreground text-white")}>
                 <LogOut className="h-4 w-4" /> Logout
               </button>
             </div>
@@ -268,6 +268,7 @@ export function MobileBottomNav() {
   const pathname = usePathname();
   const router = useRouter();
   const role = useRole();
+  const isAdmin = role === "admin";
   const all = nav.filter((item) => !(item as any).adminOnly || role === "admin");
   // show max 4 + more; prioritize core
   const primary = all.slice(0, 4);
@@ -282,8 +283,11 @@ export function MobileBottomNav() {
 
   // hide on login etc but layout only renders inside dashboard so ok
   return (
-    <div className="lg:hidden fixed bottom-4 left-1/2 z-30 -translate-x-1/2 w-[calc(100%-16px)] max-w-[520px] pointer-events-none">
-      <nav className="pointer-events-auto flex items-center justify-between gap-1 rounded-full border border-foreground bg-foreground p-1.5 shadow-[0_16px_40px_rgba(11,14,13,0.3)]">
+    <div className="xl:hidden fixed bottom-3 left-1/2 z-30 -translate-x-1/2 w-[calc(100%-16px)] max-w-[520px] pointer-events-none">
+      <nav className={cn(
+        "pointer-events-auto flex items-center justify-between gap-1 rounded-full border p-1.5 shadow-[0_16px_40px_rgba(11,14,13,0.3)]",
+        isAdmin ? "border-[#2A3136] bg-[#111417]" : "border-foreground bg-foreground"
+      )}>
         {primary.map((item) => {
           const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
           return (

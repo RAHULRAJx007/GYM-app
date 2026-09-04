@@ -27,7 +27,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <div className="flex min-w-0 flex-1 flex-col">
           <MobileHeader gymName={gymName} />
           {/* desktop top meta bar - theme aware */}
-          <div className="hidden lg:block sticky top-0 z-10 border-b border-border backdrop-blur-xl" style={{ background: isAdmin ? "rgba(17,20,23,0.8)" : "rgba(255,255,255,0.7)" }}>
+          <div className="hidden xl:block sticky top-0 z-10 border-b border-border backdrop-blur-xl" style={{ background: isAdmin ? "rgba(17,20,23,0.8)" : "rgba(255,255,255,0.7)" }}>
             <div className="flex h-[64px] items-center justify-between px-6">
               <div className="flex items-center gap-3">
                 <span className="rounded-full bg-foreground px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-background">
@@ -44,7 +44,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             </div>
           </div>
 
-          <main className="flex-1 px-3 py-4 sm:px-4 sm:py-6 lg:px-6 lg:pb-8">
+          <main className="flex-1 px-2.5 py-3 sm:px-4 sm:py-6 xl:px-6 xl:pb-8">
             <div className="mx-auto max-w-[1240px]">{children}</div>
           </main>
         </div>

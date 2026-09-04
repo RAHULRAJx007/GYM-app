@@ -208,6 +208,7 @@
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "ss01" 1, "ss02" 1;
     text-rendering: optimizeLegibility;
+    overflow-x: hidden;
   }
   ::selection {
     background: #D6FF2C;

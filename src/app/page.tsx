@@ -67,7 +67,7 @@ export default function Home() {
               Members, renewals, payments and daily ops — one fast, phone-ready workspace. No clutter, no training needed.
             </p>
 
-            <div className="mt-8 grid grid-cols-3 gap-3">
+            <div className="mt-8 grid grid-cols-1 min-[420px]:grid-cols-3 gap-3">
               <div className="rounded-2xl border border-border bg-[#F9F8F4] p-4">
                 <Users className="h-4 w-4 text-foreground" />
                 <div className="mt-3 text-[22px] font-black tracking-tighter">2.4x</div>
@@ -175,7 +175,7 @@ export default function Home() {
                 <div className="h-px flex-1 bg-border" />
               </div>
 
-              <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="grid grid-cols-1 min-[420px]:grid-cols-3 gap-2 text-center">
                 <div className="rounded-2xl border border-border bg-[#F9F8F4] px-2 py-3">
                   <div className="text-[12px] font-black">Offline-ready</div>
                   <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Phone</div>
