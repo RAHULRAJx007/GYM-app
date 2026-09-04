@@ -61,11 +61,11 @@ export default async function MembersPage({ searchParams }: { searchParams: Prom
       </Card>
 
       <Card className="overflow-hidden rounded-2xl border-0 bg-card shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
+        <div className="overflow-x-auto md:overflow-visible">
+          <Table className="table-fixed md:table-auto max-md:block">
+            <TableHeader className="max-md:hidden">
               <TableRow>
-                <TableHead className="min-w-[180px]">Member</TableHead>
+                <TableHead className="min-w-0 px-2 sm:min-w-[180px] sm:px-3">Member</TableHead>
                 <TableHead className="hidden sm:table-cell">Phone</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="hidden lg:table-cell">Membership</TableHead>
@@ -73,7 +73,7 @@ export default async function MembersPage({ searchParams }: { searchParams: Prom
                 <TableHead className="w-[72px]" />
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody className="max-md:block max-md:space-y-2">
               {members?.map((m) => {
                 const isPending = pendingSet.has(m.id);
                 const active = activeMap.get(m.id) as any;
@@ -87,15 +87,15 @@ export default async function MembersPage({ searchParams }: { searchParams: Prom
                 const remaining = isPending ? "Pending approval" : active ? (isEnded ? `${Math.abs(daysLeft!)}d ago` : `${daysLeft}d left`) : "No plan";
 
                 return (
-                  <TableRow key={m.id} className={isPending ? "bg-amber-50/50" : isEnded ? "bg-red-50/20" : isDue ? "bg-amber-50/25" : ""}>
-                    <TableCell className="py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-slate-900 to-slate-600 text-sm font-semibold text-white">
+                  <TableRow key={m.id} className={`max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-2 max-md:rounded-xl max-md:border max-md:p-2 ${isPending ? "bg-amber-50/50" : isEnded ? "bg-red-50/20" : isDue ? "bg-amber-50/25" : ""}`}>
+                    <TableCell className="min-w-0 whitespace-normal px-2 py-3 max-md:row-span-2 max-md:block max-md:border-0 max-md:p-1 sm:px-3">
+                      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-900 to-slate-600 text-xs font-semibold text-white sm:h-10 sm:w-10 sm:text-sm">
                           {m.first_name?.charAt(0)?.toUpperCase() || "M"}{m.last_name?.charAt(0)?.toUpperCase() || "M"}
                         </div>
                         <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 font-semibold text-card-foreground">
-                            {m.first_name} {m.last_name}
+                          <div className="flex min-w-0 items-center gap-1.5 font-semibold text-card-foreground">
+                            <span className="truncate">{m.first_name} {m.last_name}</span>
                             {isPending && <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />}
                           </div>
                           <div className="text-xs text-muted-foreground sm:hidden">{m.phone || "No phone"}</div>
@@ -114,7 +114,7 @@ export default async function MembersPage({ searchParams }: { searchParams: Prom
                       </div>
                     </TableCell>
                     <TableCell className="hidden whitespace-nowrap sm:table-cell">{m.phone || "-"}</TableCell>
-                    <TableCell>
+                    <TableCell className="max-md:col-start-2 max-md:row-start-1 max-md:block max-md:border-0 max-md:px-1 max-md:py-2">
                       {isPending ? <Badge variant="outline" className="border-amber-200 bg-amber-100 text-[10px] font-medium text-amber-800">Waiting</Badge> : isEnded ? <Badge variant="destructive" className="text-[10px] font-medium">Ended</Badge> : isDue ? <Badge variant="outline" className="border-amber-200 bg-amber-100 text-[10px] font-medium text-amber-800">Due {daysLeft}d</Badge> : <Badge variant={m.status === "active" ? "default" : "secondary"} className="text-[10px] font-medium">{m.status}</Badge>}
                     </TableCell>
                     <TableCell className="hidden whitespace-nowrap text-xs lg:table-cell">
@@ -128,7 +128,7 @@ export default async function MembersPage({ searchParams }: { searchParams: Prom
                       )}
                     </TableCell>
                     <TableCell className="hidden whitespace-nowrap text-sm md:table-cell">{new Date(m.joined_at).toLocaleDateString("en-GB")}</TableCell>
-                    <TableCell>
+                    <TableCell className="max-md:col-start-2 max-md:row-start-2 max-md:block max-md:border-0 max-md:px-1 max-md:py-1">
                       <Link href={`/dashboard/members/${m.id}`}>
                         <Button size="sm" variant="outline" className="h-8 rounded-lg">View</Button>
                       </Link>
