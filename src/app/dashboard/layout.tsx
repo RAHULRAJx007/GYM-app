@@ -20,9 +20,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
         className={`fixed inset-0 -z-10 opacity-[0.35] pointer-events-none ${isAdmin ? "forge-grid-dark" : "forge-grid"}`}
       />
       <div className="flex min-h-screen">
-        <Sidebar gymName={gymName} />
+          <Sidebar gymName={gymName} role={role} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <MobileHeader gymName={gymName} />
+          <MobileHeader gymName={gymName} role={role} />
           {/* desktop top meta bar - theme aware */}
           <div className="hidden xl:block sticky top-0 z-10 border-b border-border backdrop-blur-xl" style={{ background: isAdmin ? "rgba(17,20,23,0.8)" : "rgba(255,255,255,0.7)" }}>
             <div className="flex h-[64px] items-center justify-between px-6">

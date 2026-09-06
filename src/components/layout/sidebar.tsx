@@ -31,25 +31,10 @@ const nav = [
   { href: "/dashboard/settings", label: "Settings", icon: Settings, desc: "Gym" },
 ] as const;
 
-function useRole() {
-  const [role, setRole] = useState<string | null>(null);
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
-      supabase.from("profiles").select("role").eq("id", user.id).single().then(({ data }) => {
-        if (data?.role) setRole(data.role);
-      });
-    });
-  }, []);
-  return role;
-}
-
 /* ============ DESKTOP: NARROW RAIL + EXPAND ON HOVER ============ */
-export function Sidebar({ gymName = "FORGE" }: { gymName?: string }) {
+export function Sidebar({ gymName = "FORGE", role }: { gymName?: string; role: string }) {
   const pathname = usePathname();
   const router = useRouter();
-  const role = useRole();
   const filteredNav = nav.filter((item) => !(item as any).adminOnly || role === "admin");
   const isStaff = role === "staff";
 
@@ -160,12 +145,15 @@ export function Sidebar({ gymName = "FORGE" }: { gymName?: string }) {
 }
 
 /* ============ MOBILE: TOP BAR + DRAWER + FLOATING PILL ============ */
-export function MobileHeader({ gymName = "FORGE" }: { gymName?: string }) {
+export function MobileHeader({ gymName = "FORGE", role }: { gymName?: string; role: string }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const role = useRole();
   const filtered = nav.filter((item) => !(item as any).adminOnly || role === "admin");
+
+  useEffect(() => {
+    filtered.forEach((item) => router.prefetch(item.href));
+  }, [filtered, router]);
 
   async function logout() {
     const supabase = createClient();
@@ -271,9 +259,8 @@ export function MobileHeader({ gymName = "FORGE" }: { gymName?: string }) {
 export function MobileBottomNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const role = useRole();
-  const isAdmin = role === "admin";
-  const all = nav.filter((item) => !(item as any).adminOnly || role === "admin");
+  const isAdmin = false;
+  const all = nav.filter((item) => !(item as any).adminOnly);
   // show max 4 + more; prioritize core
   const primary = all.slice(0, 4);
   const overflowCount = all.length - primary.length;
