@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getDashboardContext } from "@/lib/supabase/dashboard-context";
 import { Sidebar, MobileHeader } from "@/components/layout/sidebar";
 import { NotificationsBell } from "@/components/notifications-bell";
+import { FormFeedback } from "@/components/form-feedback";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const ctx: any = await getDashboardContext();
@@ -49,6 +50,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </main>
         </div>
       </div>
+      <FormFeedback />
     </div>
   );
 }
