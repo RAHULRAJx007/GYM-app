@@ -15,11 +15,13 @@ export default async function MembersPage({ searchParams }: { searchParams: Prom
   const { data: profile } = user ? await supabase.from("profiles").select("role").eq("id", user.id).single() : { data: null } as any;
   const isAdmin = profile?.role === "admin";
   const { data: gym } = await supabase.from("gym_settings").select("name, phone, address, email").order("created_at", { ascending: false }).limit(1).maybeSingle();
+  // Only filter by member status for 'active', other filters (due/ended/pending) are membership-based and handled after fetch
+  const isMemberStatusFilter = status === "active";
   let query = supabase.from("members").select("id,first_name,last_name,phone,email,status,joined_at").order("created_at", { ascending: false }).limit(100);
   if (q) query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,phone.ilike.%${q}%,email.ilike.%${q}%`);
-  if (status && status !== "all") query = query.eq("status", status);
-  const { data: members } = await query;
-  const memberIds = (members || []).map((m) => m.id);
+  if (isMemberStatusFilter) query = query.eq("status", status);
+  const { data: membersRaw } = await query;
+  const memberIds = (membersRaw || []).map((m) => m.id);
   const [{ data: pendingMships }, { data: activeMships }] = memberIds.length
     ? await Promise.all([
         supabase.from("member_memberships").select("member_id,status").in("member_id", memberIds).eq("status", "pending"),
@@ -28,6 +30,26 @@ export default async function MembersPage({ searchParams }: { searchParams: Prom
     : [{ data: [] } as any, { data: [] } as any];
   const pendingSet = new Set((pendingMships as any[] | null)?.map((p) => p.member_id) || []);
   const activeMap = new Map((activeMships as any[] | null)?.map((m: any) => [m.member_id, m]) || []);
+  // Apply due/ended/pending filters in JS (membership-based)
+  let members = membersRaw;
+  if (status === "pending") members = (membersRaw || []).filter((m) => pendingSet.has(m.id));
+  else if (status === "due") {
+    const today = new Date().setHours(0, 0, 0, 0);
+    members = (membersRaw || []).filter((m) => {
+      const a = activeMap.get(m.id) as any;
+      if (!a) return false;
+      const daysLeft = Math.ceil((new Date(a.end_date).setHours(0, 0, 0, 0) - today) / 86400000);
+      return daysLeft >= 0 && daysLeft <= 7;
+    });
+  } else if (status === "ended") {
+    const today = new Date().setHours(0, 0, 0, 0);
+    members = (membersRaw || []).filter((m) => {
+      const a = activeMap.get(m.id) as any;
+      if (!a) return false;
+      const daysLeft = Math.ceil((new Date(a.end_date).setHours(0, 0, 0, 0) - today) / 86400000);
+      return daysLeft < 0;
+    });
+  }
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -51,9 +73,9 @@ export default async function MembersPage({ searchParams }: { searchParams: Prom
             <select name="status" defaultValue={status || "all"} className="h-11 rounded-xl border border-border bg-muted px-3 text-sm text-muted-foreground md:w-44">
               <option value="all">All</option>
               <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="frozen">Frozen</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="due">Due (7 days)</option>
+              <option value="ended">Ended</option>
+              <option value="pending">Pending</option>
             </select>
             <Button type="submit" variant="secondary" className="h-11 rounded-xl md:w-auto">Search</Button>
           </form>
