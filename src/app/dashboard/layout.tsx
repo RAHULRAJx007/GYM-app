@@ -4,7 +4,9 @@ import { Sidebar, MobileHeader } from "@/components/layout/sidebar";
 import { NotificationsBell } from "@/components/notifications-bell";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, role, gym } = await getDashboardContext();
+  const ctx: any = await getDashboardContext();
+  const { user, role, gym } = ctx;
+  if ((ctx as any).isDisabled) redirect("/?error=disabled");
   if (!user) redirect("/");
 
   const gymName = gym?.name || "FORGE Gym";

@@ -20,14 +20,24 @@ export default function Home() {
     setLoading(true);
     setError("");
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error, data } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setError(error.message);
       setLoading(false);
-    } else {
-      router.push("/dashboard");
-      router.refresh();
+      return;
     }
+    // Check if staff is disabled
+    if (data.user) {
+      const { data: profile } = await supabase.from("profiles").select("is_active,role").eq("id", data.user.id).single();
+      if (profile && profile.is_active === false) {
+        await supabase.auth.signOut();
+        setError("Account disabled. Contact admin.");
+        setLoading(false);
+        return;
+      }
+    }
+    router.push("/dashboard");
+    router.refresh();
   }
 
   return (
