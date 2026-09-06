@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getDashboardContext } from "@/lib/supabase/dashboard-context";
 import { Sidebar, MobileHeader } from "@/components/layout/sidebar";
+import { NotificationsBell } from "@/components/notifications-bell";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, role, gym } = await getDashboardContext();
@@ -31,9 +32,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
                   {isAdmin ? "Full access • Approvals • Revenue" : "Phone-optimized • Fast entry"} • <span className="font-semibold text-foreground">{gymName}</span>
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-xs font-medium">
-                <span className={`h-2 w-2 rounded-full animate-pulse ${isAdmin ? "bg-[var(--accent)]" : "bg-emerald-500"}`} />{" "}
-                {isAdmin ? "Admin live" : "Staff live"}
+              <div className="flex items-center gap-3">
+                <NotificationsBell />
+                <div className="flex items-center gap-2 text-xs font-medium">
+                  <span className={`h-2 w-2 rounded-full animate-pulse ${isAdmin ? "bg-[var(--accent)]" : "bg-emerald-500"}`} />{" "}
+                  {isAdmin ? "Admin live" : "Staff live"}
+                </div>
               </div>
             </div>
           </div>

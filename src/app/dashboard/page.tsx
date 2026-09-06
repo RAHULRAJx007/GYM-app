@@ -17,7 +17,7 @@ export default async function DashboardPage() {
     supabase.from("members").select("id", { count: "exact", head: true }),
     supabase.from("members").select("id", { count: "exact", head: true }).eq("status", "active"),
     supabase.from("membership_plans").select("id").eq("is_active", true),
-    !isAdmin ? Promise.resolve({ data: [] } as any) : supabase.from("payments").select("amount,payment_date").gte("payment_date", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10)),
+    !isAdmin ? Promise.resolve({ data: [] } as any) : supabase.from("payments").select("amount,payment_date").eq("status", "completed").gte("payment_date", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10)),
     supabase.from("member_memberships").select("id,end_date, member_id, members(first_name,last_name,phone),membership_plans(name)").eq("status", "active").gte("end_date", todayStr).lte("end_date", in7Str).order("end_date", { ascending: true }).limit(20),
     supabase.from("member_memberships").select("id,end_date, member_id, members(first_name,last_name,phone),membership_plans(name)").eq("status", "active").lt("end_date", todayStr).order("end_date", { ascending: false }).limit(20),
   ]);

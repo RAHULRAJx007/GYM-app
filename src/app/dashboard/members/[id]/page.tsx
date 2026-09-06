@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { assignMembership, recordPayment, checkIn, deleteMember, updateMember, renewMembership } from "@/lib/actions/members";
+import { assignMembership, recordPayment, deleteMember, updateMember, renewMembership } from "@/lib/actions/members";
 import Link from "next/link";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { WhatsAppButton } from "@/components/whatsapp-button";
@@ -23,11 +23,10 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
   const { data: member } = await supabase.from("members").select("*").eq("id", id).single();
   if (!member) notFound();
 
-  const [{ data: memberships }, { data: payments }, { data: attendances }, { data: plans }] = await Promise.all([
+  const [{ data: memberships }, { data: payments }, { data: plans }] = await Promise.all([
     supabase.from("member_memberships").select("*, membership_plans(name,price)").eq("member_id", id).order("created_at", { ascending: false }),
     supabase.from("payments").select("*").eq("member_id", id).order("payment_date", { ascending: false }).limit(20),
-    supabase.from("attendances").select("*").eq("member_id", id).order("check_in_at", { ascending: false }).limit(10),
-    supabase.from("membership_plans").select("id,name,price,duration_days").eq("is_active", true),
+    supabase.from("membership_plans").select("id,name,price,duration_days").eq("is_active", true).eq("category", "membership"),
   ]);
 
   const activeMembership = memberships?.find((m) => m.status === "active");
@@ -143,16 +142,6 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
               </div>
             </CardContent>
           </Card>
-
-          {isAdmin && (
-            <Card>
-              <CardHeader><CardTitle>Attendance (last 10)</CardTitle></CardHeader>
-              <CardContent className="text-sm space-y-1">
-                {attendances?.map((a) => <div key={a.id} className="border-b py-1">{new Date(a.check_in_at).toLocaleString("en-GB")} {a.check_out_at ? `→ ${new Date(a.check_out_at).toLocaleString("en-GB")}` : "(checked in)"}</div>)}
-                {(!attendances || attendances.length === 0) && <p className="text-muted-foreground">No check-ins yet.</p>}
-              </CardContent>
-            </Card>
-          )}
 
           <Card>
             <CardHeader><CardTitle className="flex items-center gap-2">Edit Member {!isAdmin && hasPending && <Badge variant="outline" className="text-[10px] bg-amber-100 text-amber-800 border-amber-200">Editable until approval</Badge>}{!isAdmin && !hasPending && <Badge variant="outline" className="text-[10px]">Locked</Badge>}</CardTitle></CardHeader>

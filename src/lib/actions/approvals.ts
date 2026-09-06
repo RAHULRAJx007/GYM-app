@@ -8,6 +8,7 @@ export async function approveMembership(formData: FormData) {
   if (!id) throw new Error("Missing id");
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  await requireAdmin(supabase, user?.id);
   let { error } = await supabase.from("member_memberships").update({ status: "active", approved_by: user?.id, approved_at: new Date().toISOString() } as any).eq("id", id);
   if (error && (error.code === "PGRST204" || String(error.message).includes("approved_by"))) {
     const retry = await supabase.from("member_memberships").update({ status: "active" } as any).eq("id", id);
@@ -28,9 +29,14 @@ export async function approveMembership(formData: FormData) {
 
 export async function rejectMembership(formData: FormData) {
   const id = String(formData.get("id") || "");
+  if (!id) throw new Error("Missing id");
   const supabase = await createClient();
-  await supabase.from("member_memberships").update({ status: "rejected", updated_at: new Date().toISOString() } as any).eq("id", id);
-  await supabase.from("payments").update({ status: "rejected" } as any).eq("membership_id", id).in("status", ["pending", "completed"]);
+  const { data: { user } } = await supabase.auth.getUser();
+  await requireAdmin(supabase, user?.id);
+  const { error: membershipError } = await supabase.from("member_memberships").update({ status: "rejected", updated_at: new Date().toISOString() } as any).eq("id", id);
+  if (membershipError) throw new Error(membershipError.message);
+  const { error: paymentError } = await supabase.from("payments").update({ status: "rejected" } as any).eq("membership_id", id).in("status", ["pending", "completed"]);
+  if (paymentError) throw new Error(paymentError.message);
   const { data: rejected } = await supabase.from("member_memberships").select("id,updated_at").eq("status", "rejected").order("updated_at", { ascending: true });
   if (rejected && rejected.length > 30) {
     const toDelete = rejected.slice(0, rejected.length - 30).map((r: any) => r.id);
@@ -42,8 +48,10 @@ export async function rejectMembership(formData: FormData) {
 
 export async function approvePayment(formData: FormData) {
   const id = String(formData.get("id") || "");
+  if (!id) throw new Error("Missing id");
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  await requireAdmin(supabase, user?.id);
   let { error } = await supabase.from("payments").update({ status: "completed", approved_by: user?.id, approved_at: new Date().toISOString() } as any).eq("id", id);
   if (error && (error.code === "PGRST204" || String(error.message).includes("approved_by"))) {
     const retry = await supabase.from("payments").update({ status: "completed" } as any).eq("id", id);
@@ -57,6 +65,7 @@ export async function approvePayment(formData: FormData) {
       const retry = await supabase.from("member_memberships").update({ status: "active" } as any).eq("id", pay2.membership_id).eq("status", "pending");
       mmErr = retry.error as any;
     }
+    if (mmErr) throw new Error(mmErr.message);
   }
   revalidatePath("/dashboard/approvals");
   redirect("/dashboard/approvals");
@@ -64,8 +73,12 @@ export async function approvePayment(formData: FormData) {
 
 export async function rejectPayment(formData: FormData) {
   const id = String(formData.get("id") || "");
+  if (!id) throw new Error("Missing id");
   const supabase = await createClient();
-  await supabase.from("payments").update({ status: "rejected" } as any).eq("id", id);
+  const { data: { user } } = await supabase.auth.getUser();
+  await requireAdmin(supabase, user?.id);
+  const { error } = await supabase.from("payments").update({ status: "rejected" } as any).eq("id", id);
+  if (error) throw new Error(error.message);
   const { data: rejected } = await supabase.from("payments").select("id").eq("status", "rejected").order("created_at", { ascending: true });
   if (rejected && rejected.length > 30) {
     const toDelete = rejected.slice(0, rejected.length - 30).map((r: any) => r.id);
@@ -77,8 +90,10 @@ export async function rejectPayment(formData: FormData) {
 
 export async function reapproveMembership(formData: FormData) {
   const id = String(formData.get("id") || "");
+  if (!id) throw new Error("Missing id");
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  await requireAdmin(supabase, user?.id);
   let { error } = await supabase.from("member_memberships").update({ status: "active", approved_by: user?.id, approved_at: new Date().toISOString() } as any).eq("id", id).eq("status", "rejected");
   if (error && (error.code === "PGRST204" || String(error.message).includes("approved_by"))) {
     const retry = await supabase.from("member_memberships").update({ status: "active" } as any).eq("id", id).eq("status", "rejected");
@@ -92,8 +107,10 @@ export async function reapproveMembership(formData: FormData) {
 
 export async function reapprovePayment(formData: FormData) {
   const id = String(formData.get("id") || "");
+  if (!id) throw new Error("Missing id");
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  await requireAdmin(supabase, user?.id);
   let { error } = await supabase.from("payments").update({ status: "completed", approved_by: user?.id, approved_at: new Date().toISOString() } as any).eq("id", id).eq("status", "rejected");
   if (error && (error.code === "PGRST204" || String(error.message).includes("approved_by"))) {
     const retry = await supabase.from("payments").update({ status: "completed" } as any).eq("id", id).eq("status", "rejected");
@@ -102,4 +119,10 @@ export async function reapprovePayment(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard/approvals");
   redirect("/dashboard/approvals");
+}
+
+async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>, userId?: string) {
+  if (!userId) throw new Error("Authentication required");
+  const { data: profile, error } = await supabase.from("profiles").select("role").eq("id", userId).single();
+  if (error || profile?.role !== "admin") throw new Error("Only admin can manage approvals");
 }

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { NotificationsBell } from "@/components/notifications-bell";
 import {
   LayoutDashboard,
   Users,
@@ -194,9 +195,12 @@ export function MobileHeader({ gymName = "FORGE" }: { gymName?: string }) {
               <div className="text-[11px] font-semibold text-muted-foreground truncate max-w-[140px]">{gymName}</div>
             </div>
           </div>
-          <span className={cn("rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.1em]", isAdmin ? "bg-accent text-accent-foreground" : "bg-foreground text-accent")}>
-            {role || "…"}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className={cn("rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.1em]", isAdmin ? "bg-accent text-accent-foreground" : "bg-foreground text-accent")}>
+              {role || "…"}
+            </span>
+            <NotificationsBell />
+          </div>
         </div>
       </header>
 

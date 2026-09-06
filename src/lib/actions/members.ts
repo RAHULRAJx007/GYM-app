@@ -288,6 +288,8 @@ export async function renewMembership(memberId: string, formData: FormData) {
 
   const { data: newPlan } = await supabase.from("membership_plans").select("price,duration_days").eq("id", plan_id).single();
   if (!newPlan) throw new Error("Plan not found");
+  const { data: planCategory } = await supabase.from("membership_plans").select("category").eq("id", plan_id).single();
+  if (planCategory?.category && planCategory.category !== "membership") throw new Error("Renewal requires a membership plan");
 
   const selectedPrice = Number(newPlan.price || 0);
   const selectedDuration = Number(newPlan.duration_days || 30);
@@ -364,9 +366,3 @@ export async function renewMembership(memberId: string, formData: FormData) {
   revalidatePath("/dashboard/payments");
 }
 
-export async function checkIn(memberId: string) {
-  const supabase = await createClient();
-  const { error } = await supabase.from("attendances").insert({ member_id: memberId } as any);
-  if (error) throw new Error(error.message);
-  revalidatePath("/dashboard");
-}

@@ -12,7 +12,7 @@ export default async function PaymentsPage() {
     .order("payment_date", { ascending: false })
     .limit(100);
 
-  const total = (payments ?? []).reduce((s, p) => s + Number(p.amount), 0);
+  const total = (payments ?? []).filter((p) => p.status === "completed").reduce((s, p) => s + Number(p.amount), 0);
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -28,7 +28,7 @@ export default async function PaymentsPage() {
 
       <Card className="overflow-hidden rounded-2xl border-0 bg-card shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Total (last 100): {formatCurrency(total)}</CardTitle>
+          <CardTitle className="text-lg">Completed total (last 100): {formatCurrency(total)}</CardTitle>
         </CardHeader>
         <div className="overflow-x-auto">
           <Table>

@@ -164,8 +164,11 @@ drop policy if exists "allow all for authenticated" on payments;
 
 -- Profiles: users can read all, update own, admin can update all
 create policy "profiles read" on profiles for select to authenticated using (true);
-create policy "profiles insert" on profiles for insert to authenticated with check (true);
-create policy "profiles update own or admin" on profiles for update to authenticated using (auth.uid() = id or my_role() = 'admin');
+drop policy if exists "profiles insert" on profiles;
+drop policy if exists "profiles update own or admin" on profiles;
+create policy "profiles update own or admin" on profiles for update to authenticated
+  using (auth.uid() = id or my_role() = 'admin')
+  with check (my_role() = 'admin' or (auth.uid() = id and role = 'staff'));
 
 -- Gym settings: all authenticated read, admin write
 create policy "gym read" on gym_settings for select to authenticated using (true);
@@ -177,19 +180,29 @@ create policy "plans write admin" on membership_plans for all to authenticated u
 
 -- Members: staff + admin can read/insert, admin can delete
 create policy "members read" on members for select to authenticated using (true);
-create policy "members insert" on members for insert to authenticated with check (true);
-create policy "members update" on members for update to authenticated using (true);
+drop policy if exists "members insert" on members;
+create policy "members insert" on members for insert to authenticated with check (my_role() in ('admin', 'staff'));
+drop policy if exists "members update" on members;
+create policy "members update" on members for update to authenticated
+  using (my_role() = 'admin' or exists (select 1 from member_memberships where member_id = members.id and status = 'pending'))
+  with check (my_role() = 'admin' or exists (select 1 from member_memberships where member_id = members.id and status = 'pending'));
 create policy "members delete admin" on members for delete to authenticated using (my_role() = 'admin');
 
 -- Memberships: staff can create pending, admin can approve; all can read
 create policy "mm read" on member_memberships for select to authenticated using (true);
-create policy "mm insert" on member_memberships for insert to authenticated with check (true);
-create policy "mm update" on member_memberships for update to authenticated using (true);
+drop policy if exists "mm insert" on member_memberships;
+create policy "mm insert" on member_memberships for insert to authenticated
+  with check (my_role() = 'admin' or (my_role() = 'staff' and status = 'pending'));
+drop policy if exists "mm update" on member_memberships;
+create policy "mm update admin" on member_memberships for update to authenticated using (my_role() = 'admin') with check (my_role() = 'admin');
 
 -- Payments: same
 create policy "payments read" on payments for select to authenticated using (true);
-create policy "payments insert" on payments for insert to authenticated with check (true);
-create policy "payments update" on payments for update to authenticated using (true);
+drop policy if exists "payments insert" on payments;
+create policy "payments insert" on payments for insert to authenticated
+  with check (my_role() = 'admin' or (my_role() = 'staff' and status = 'pending'));
+drop policy if exists "payments update" on payments;
+create policy "payments update admin" on payments for update to authenticated using (my_role() = 'admin') with check (my_role() = 'admin');
 
 -- Storage bucket for payment proofs (screenshots)
 insert into storage.buckets (id, name, public) values ('payment-proofs', 'payment-proofs', true) on conflict (id) do nothing;
